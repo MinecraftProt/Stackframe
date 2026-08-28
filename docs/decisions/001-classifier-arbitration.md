@@ -142,18 +142,20 @@ For each normalized event, the arbiter performs these steps:
    Evidence is de-duplicated by source key; confidence is recomputed after merge.
 5. Remove low-confidence candidates from operator eligibility, retaining their
    development explanations.
-6. Rank eligible candidates by this tuple, in descending order:
+6. If no eligible candidates remain, record the reason and select the generic
+   fallback for that failure unit.
+7. Rank eligible candidates by this tuple, in descending order:
    effective confidence; presence of direct evidence; independent corroborating
    count capped at two; independent contextual count capped at two; then
    registry-reviewed precedence.
-7. If exactly one semantic candidate has the highest tuple, select it. If all
+8. If exactly one semantic candidate has the highest tuple, select it. If all
    highest candidates have the same diagnostic identity and can combine, merge
    and select them.
-8. If highest candidates with different diagnostic identities have the same
-   tuple, do not use classifier key, discovery order, or collection order as a
-   semantic tie-breaker. Record a conflict and select the generic fallback for
-   that failure unit.
-9. Emit selected diagnostics for every independent failure unit in canonical
+9. If highest candidates with different diagnostic identities have the same
+   tuple, or if they have the same identity but cannot combine, do not use
+   classifier key, discovery order, or collection order as a semantic tie-breaker.
+   Record a conflict and select the generic fallback for that failure unit.
+10. Emit selected diagnostics for every independent failure unit in canonical
    failure-unit order. Use diagnostic identity, canonical location, and
    classifier key only as stable secondary ordering keys when units share the
    same normalized position.
@@ -300,7 +302,7 @@ arbitration semantics.
 | High typed candidate versus medium message-pattern candidate | Select high candidate | Lower candidate suppressed |
 | One medium candidate with valid corroborating evidence | Select it with medium-safety restrictions | Evidence ceiling and restrictions |
 | Only heuristic or low candidates | Generic fallback | Low candidates and reason |
-| Equal-rank candidates with different meanings | Generic fallback | Conflict and both candidates |
+| Equal-rank candidates with different meanings or incompatible facts | Generic fallback | Conflict and all tied candidates |
 | Same identity, compatible facts, combination allowed | Merge once and recompute confidence | Merge members and de-duplicated evidence |
 | Different proven failure units | Preserve all; aggregate only under the rules above | Selection per unit |
 | Unsupported mod blame on an otherwise valid candidate | Remove blame, or reject if blame defines its meaning | Claim rejection reason |
