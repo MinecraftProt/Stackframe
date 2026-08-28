@@ -1,0 +1,90 @@
+name: Bug report
+description: Report incorrect, missing, duplicated, or unreadable diagnostics.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Stackframe. Remove secrets, access tokens,
+        public IP addresses, and other sensitive data from logs before posting.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong, and what did Stackframe display?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Start a server with ...
+        2. Trigger ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected diagnostic
+      description: What should have been displayed or preserved?
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Sanitized output
+      description: Include the Stackframe diagnostic and relevant full trace.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: stackframe-version
+    attributes:
+      label: Stackframe version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: Minecraft version
+    validations:
+      required: true
+  - type: input
+    id: loader-version
+    attributes:
+      label: Loader and version
+      placeholder: Fabric Loader 0.x
+    validations:
+      required: true
+  - type: dropdown
+    id: output-mode
+    attributes:
+      label: Output mode
+      options:
+        - Auto
+        - ANSI
+        - Plain
+        - JSON
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: Relevant mods and environment
+      description: Include Java version, operating system, hosting panel, and mods.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched for an existing issue.
+          required: true
+        - label: I removed credentials and sensitive personal data.
+          required: true
