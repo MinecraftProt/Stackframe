@@ -307,6 +307,8 @@ error[SF3004]: mod dependency is
   missing
 location:
   mods/example-addon.jar
+mod:
+  example-addon 2.1.0
 requires:
   example-core >=3.0.0
 found:
