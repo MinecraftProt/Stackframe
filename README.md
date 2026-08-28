@@ -44,6 +44,7 @@ Fabric servers; it is not ready for production use yet.
 stackframe-core       loader-independent diagnostic model and pipeline
 stackframe-renderer   terminal, plain-text, and structured output
 stackframe-fabric     Fabric/Minecraft integration
+stackframe-forge      Forge/Minecraft integration after the shared SPI stabilizes
 stackframe-testkit    fixtures, snapshots, and integration-test utilities
 ```
 
@@ -59,6 +60,9 @@ stackframe-testkit    fixtures, snapshots, and integration-test utilities
 | [Security and privacy](docs/SECURITY_AND_PRIVACY.md) | Threat model and redaction boundaries |
 | [Release process](docs/RELEASES.md) | Versioning, channels, and publication gates |
 | [GitHub workflow](docs/GITHUB_WORKFLOW.md) | Issues, labels, project board, and branches |
+| [Parallel workstreams](docs/WORKSTREAMS.md) | Module ownership and multi-worker boundaries |
+| [Dependency waves](docs/DEPENDENCIES.md) | Safe order for parallel issue execution |
+| [Worker handoff](docs/HANDOFF.md) | Standard context transfer between sessions |
 | [Contributing](CONTRIBUTING.md) | Contributor workflow and engineering expectations |
 | [Support](SUPPORT.md) | Getting help and preparing a useful report |
 | [Governance](GOVERNANCE.md) | Decision-making and maintainer responsibilities |

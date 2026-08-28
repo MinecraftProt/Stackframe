@@ -162,12 +162,18 @@ stackframe-renderer
 stackframe-fabric
   depends on core and renderer; lifecycle and logging integration
 
+stackframe-forge
+  depends on core and renderer; Forge lifecycle and logging integration
+
 stackframe-testkit
   shared exception fixtures, fake platform metadata, golden-file helpers
 ```
 
 Platform modules may depend on core, but core cannot import Fabric, Forge,
 Minecraft, Log4j, or platform-specific metadata types.
+
+Each module has a local README defining ownership and dependency boundaries.
+Cross-module work follows [WORKSTREAMS.md](WORKSTREAMS.md).
 
 ## Configuration
 

@@ -4,6 +4,9 @@ GitHub issues hold scoped requirements, milestones hold release outcomes, and th
 [Stackframe Roadmap](https://github.com/orgs/MinecraftProt/projects/1) shows live
 status across the repository.
 
+The project also has a `Workstream` field. Workers use it to filter for tasks
+whose files and contracts they can own independently.
+
 ## Issue requirements
 
 Implementation starts from an issue containing:
@@ -60,6 +63,18 @@ Dependencies, workstreams, and exit criteria are in [ROADMAP.md](ROADMAP.md).
 Priority is not issue order. Dependencies and milestone exit criteria determine
 which ready issue starts next.
 
+### Coordination
+
+- `parallel-ready`: dependencies and contracts are clear enough for an
+  independent worker to start.
+- `needs-decision`: an unresolved product or architecture choice blocks safe
+  implementation.
+- `blocked`: an explicit external issue, pull request, or decision prevents
+  progress.
+
+Every `blocked` or `needs-decision` label has an issue comment naming the exact
+unblock condition. Labels are removed when that condition is met.
+
 ## Board states
 
 - **Todo:** accepted and scoped, but not actively implemented.
@@ -70,6 +85,17 @@ which ready issue starts next.
 
 Blocked work remains in progress only when someone is actively resolving the
 block; otherwise return it to Todo and document the dependency.
+
+## Workstream epics
+
+Six epic issues group the implementation backlog by ownership boundary: core,
+renderer, Fabric, verification, documentation/release, and Forge. Each scoped
+issue has one parent epic and one `Workstream` field value.
+
+Epics cross milestones and therefore do not carry a milestone themselves.
+Milestones answer *when*; workstreams answer *where and by whom*.
+
+See [WORKSTREAMS.md](WORKSTREAMS.md) for path ownership and dependency rules.
 
 ## Pull requests
 

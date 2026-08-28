@@ -19,14 +19,30 @@ Open pull requests against `dev` unless a maintainer requests another base.
 See [GitHub workflow](docs/GITHUB_WORKFLOW.md) for labels, milestones, and board
 states.
 
+## Parallel work
+
+Follow [Parallel workstreams](docs/WORKSTREAMS.md) when several contributors or
+agent sessions work at once.
+
+- One issue maps to one branch, one active owner, and normally one pull request.
+- Claim the issue on the roadmap before editing.
+- Stay inside the workstream's owned paths unless the issue explicitly lists a
+  cross-cutting contract change.
+- Coordinate changes to root build files, shared models, public interfaces, and
+  diagnostic-code meanings before implementation.
+- Rebase or merge from `dev` before handing dependent work to another worker.
+- Use the [handoff template](docs/HANDOFF.md) when work changes owner or unlocks a
+  dependent issue.
+
 ## Development workflow
 
 1. Choose or open an issue and describe the intended behavior.
-2. Keep loader-independent logic out of Fabric- or Forge-specific modules.
-3. Add focused tests, including a golden output fixture for rendering changes.
-4. Confirm that plain output conveys everything shown with ANSI styling.
-5. Document user-visible configuration or diagnostic-code changes.
-6. Open a focused pull request and link the issue.
+2. Set its roadmap status to In progress and record the active owner.
+3. Keep loader-independent logic out of Fabric- or Forge-specific modules.
+4. Add focused tests, including a golden output fixture for rendering changes.
+5. Confirm that plain output conveys everything shown with ANSI styling.
+6. Document user-visible configuration or diagnostic-code changes.
+7. Open a focused pull request and link the issue.
 
 ## Engineering expectations
 

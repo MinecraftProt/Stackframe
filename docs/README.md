@@ -15,6 +15,12 @@ expected behavior.
 6. [Release process](RELEASES.md) defines version and publication rules.
 7. [GitHub workflow](GITHUB_WORKFLOW.md) explains how work moves through issues,
    the project board, branches, and pull requests.
+8. [Parallel workstreams](WORKSTREAMS.md) assigns module and file ownership so
+   several workers can contribute without unnecessary conflicts.
+9. [Dependency waves](DEPENDENCIES.md) identifies which issues can start together
+   and which contracts must land first.
+10. [Worker handoff](HANDOFF.md) defines the context required when work changes
+   sessions or unlocks a dependent task.
 
 ## Decision records
 
@@ -33,6 +39,7 @@ policy, or release guarantee.
 | Sensitive data handling | `SECURITY_AND_PRIVACY.md`, threat fixtures |
 | Milestone or release scope | `ROADMAP.md`, GitHub milestone/project |
 | Versioning or publication | `RELEASES.md`, release workflow |
+| Workstream or ownership boundary | `WORKSTREAMS.md`, module README |
 
 The live issue tracker is authoritative for implementation status. Documents are
 authoritative for cross-cutting contracts and policies.

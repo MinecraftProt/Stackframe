@@ -25,6 +25,9 @@ Work outside this path can proceed in parallel when its input contracts are
 stable. A milestone does not close merely because code exists; all exit criteria
 must be demonstrated.
 
+See [DEPENDENCIES.md](DEPENDENCIES.md) for parallel execution waves and the
+starter queue.
+
 ## M0 - Foundation
 
 **Outcome:** a reproducible, loader-independent diagnostics foundation with a
