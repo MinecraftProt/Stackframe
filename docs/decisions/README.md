@@ -32,3 +32,9 @@ Create an ADR when changing:
 6. Never rewrite an accepted decision substantially; supersede it with a new ADR.
 
 Statuses are `Proposed`, `Accepted`, `Rejected`, `Deprecated`, and `Superseded`.
+
+## Records
+
+| ADR | Status | Decision |
+| --- | --- | --- |
+| [001](001-classifier-arbitration.md) | Proposed | Deterministic classifier arbitration |

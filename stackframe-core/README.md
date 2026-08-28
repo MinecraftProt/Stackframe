@@ -32,3 +32,5 @@ types and executable contract tests are deferred until the Gradle scaffold in
 - Never retain a throwable or server instance beyond completed output.
 
 See [`docs/WORKSTREAMS.md`](../docs/WORKSTREAMS.md).
+Classifier evidence, confidence, arbitration, and fallback behavior are specified
+by [`ADR 001`](../docs/decisions/001-classifier-arbitration.md).
