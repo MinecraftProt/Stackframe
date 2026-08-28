@@ -82,5 +82,8 @@ for scoped requirements and acceptance criteria.
 
 ## Status and license
 
-The project is pre-alpha. A license has not been selected yet, so no permission
-to use, modify, or redistribute the code is granted until a license is added.
+The project is pre-alpha. Stackframe is licensed under the
+[Apache License 2.0](LICENSE), a permissive license that allows use,
+modification, and redistribution while preserving its notices. The rationale
+and alternatives are recorded in
+[ADR 001](docs/decisions/001-apache-2.0-license.md).

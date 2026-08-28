@@ -72,6 +72,17 @@ Use clear, imperative commit subjects. Keep unrelated refactors out of feature
 pull requests. A pull request should explain the operator impact, technical
 approach, fallback behavior, and validation performed.
 
+## Contribution licensing
+
+Stackframe is distributed under the [Apache License 2.0](LICENSE). Under
+section 5 of that license, intentionally submitted contributions are provided
+under the same terms unless the contributor explicitly states otherwise.
+
+Only submit work that you have the right to contribute. Identify third-party
+material and its license in the pull request; do not copy Minecraft code or
+assets into the repository. Maintainers must review third-party license and
+notice obligations before accepting or bundling that material.
+
 Changes to a public contract, dependency direction, data handling policy, or
 release process may require an architecture decision record. Copy the template
 in [`docs/decisions`](docs/decisions/000-template.md), choose the next number,

@@ -33,7 +33,7 @@ No branch name contains a person's name, username, or initials.
 - Capture never swallows an injected original error.
 - Full traces and correlation IDs are recoverable.
 - Installation, configuration, privacy limitations, and known issues are clear.
-- License and artifact metadata are complete.
+- License files and artifact metadata use the `Apache-2.0` SPDX identifier.
 
 ## Production-ready Fabric gates
 
@@ -60,7 +60,8 @@ Release automation should:
 1. Build from an annotated version tag on an approved commit.
 2. Use the committed Gradle wrapper and selected Java toolchain.
 3. Run the complete release test matrix.
-4. Generate artifacts, checksums, dependency/license data, and provenance.
+4. Include the root `LICENSE`, identify Stackframe as `Apache-2.0`, and generate
+   checksums, dependency/license data, and provenance.
 5. Produce release notes from reviewed issues and pull requests.
 6. Require explicit maintainer approval before external publication.
 7. Never grant publication credentials to pull-request workflows.

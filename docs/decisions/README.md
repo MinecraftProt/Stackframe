@@ -4,6 +4,10 @@ Architecture decision records (ADRs) preserve why a significant choice was made
 and which constraints it protects. They supplement issues and pull requests;
 they do not replace implementation acceptance criteria.
 
+## Index
+
+- [ADR 001: License Stackframe under Apache-2.0](001-apache-2.0-license.md)
+
 Create an ADR when changing:
 
 - module boundaries or dependency direction;
