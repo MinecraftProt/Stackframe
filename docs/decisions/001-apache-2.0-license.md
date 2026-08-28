@@ -109,7 +109,7 @@ copyleft to meet its contribution or availability goals.
   [SPDX license list](https://spdx.org/licenses/Apache-2.0.html).
 - Review the current
   [Fabric license](https://github.com/FabricMC/fabric/blob/1.21.8/LICENSE),
-  [Minecraft Forge license](https://github.com/MinecraftForge/MinecraftForge/blob/master/LICENSE.txt),
+  [Minecraft Forge license](https://github.com/MinecraftForge/MinecraftForge/blob/26.2/LICENSE.txt),
   [Minecraft EULA](https://www.minecraft.net/en-us/eula), and
   [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines)
   before publication.
