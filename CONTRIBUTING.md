@@ -3,6 +3,10 @@
 Stackframe is currently in its design and bootstrap phase. Use a GitHub issue to
 agree on behavior before starting a large implementation.
 
+Read the [project design](docs/PROJECT.md), [diagnostic style guide](docs/DIAGNOSTIC_STYLE.md),
+and [security and privacy model](docs/SECURITY_AND_PRIVACY.md) before changing
+diagnostic behavior.
+
 ## Branches
 
 - `main` contains stable, reviewed work.
@@ -12,6 +16,8 @@ agree on behavior before starting a large implementation.
 - Do not put personal names, usernames, or initials in branch names.
 
 Open pull requests against `dev` unless a maintainer requests another base.
+See [GitHub workflow](docs/GITHUB_WORKFLOW.md) for labels, milestones, and board
+states.
 
 ## Development workflow
 
@@ -49,3 +55,8 @@ New specialized diagnostics should include:
 Use clear, imperative commit subjects. Keep unrelated refactors out of feature
 pull requests. A pull request should explain the operator impact, technical
 approach, fallback behavior, and validation performed.
+
+Changes to a public contract, dependency direction, data handling policy, or
+release process may require an architecture decision record. Copy the template
+in [`docs/decisions`](docs/decisions/000-template.md), choose the next number,
+and link the decision from the relevant issue and pull request.

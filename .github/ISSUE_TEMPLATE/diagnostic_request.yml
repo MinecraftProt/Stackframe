@@ -1,0 +1,65 @@
+name: New diagnostic request
+description: Request readable handling for a currently noisy or generic failure.
+title: "[Diagnostic]: "
+labels:
+  - enhancement
+  - "area: core"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A useful diagnostic needs reliable evidence and safe advice. Remove
+        credentials, public addresses, player data, and private paths first.
+  - type: textarea
+    id: operator-problem
+    attributes:
+      label: Operator problem
+      description: What was the administrator trying to do, and what was unclear?
+    validations:
+      required: true
+  - type: textarea
+    id: current-output
+    attributes:
+      label: Sanitized current output
+      description: Include the complete causal chain when possible.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: desired-output
+    attributes:
+      label: Suggested readable diagnostic
+      description: Show the title, cause, context, help, and trace summary you expected.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Reliable classification evidence
+      description: Name typed exceptions, metadata, fields, or identifiers that distinguish this case.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include Minecraft, Java, loader, relevant mod, and Stackframe versions.
+    validations:
+      required: true
+  - type: textarea
+    id: unsafe-values
+    attributes:
+      label: Values requiring redaction
+      description: Identify paths, addresses, usernames, tokens, or other sensitive fields.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched for an existing diagnostic request.
+          required: true
+        - label: I removed secrets and personal data.
+          required: true
+        - label: The proposed advice does not modify or delete server data automatically.
+          required: true

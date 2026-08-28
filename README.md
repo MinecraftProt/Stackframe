@@ -17,6 +17,14 @@ error[SF1001]: failed to load the overworld
    = details: 14 internal stack frames collapsed
 ```
 
+Stackframe presents each failure at two levels:
+
+- an operator view with the relevant cause, context, and safe next action;
+- a complete correlated debug record for developers and advanced support.
+
+It does not delete stack traces, rewrite normal chat or informational logs, or
+claim that a mod is responsible without evidence.
+
 ## Goals
 
 - Make production server errors readable and actionable.
@@ -24,6 +32,8 @@ error[SF1001]: failed to load the overworld
 - Work in plain terminals, ANSI-capable terminals, files, and CI logs.
 - Start with Fabric, while keeping the core independent enough for Forge later.
 - Remain useful when an error is unknown by providing a safe generic diagnostic.
+- Fail open: if formatting breaks, emit the original server error unchanged.
+- Protect secrets and personal data before output leaves the diagnostic pipeline.
 
 Stackframe is in the design and bootstrap phase. The first release will target
 Fabric servers; it is not ready for production use yet.
@@ -37,8 +47,21 @@ stackframe-fabric     Fabric/Minecraft integration
 stackframe-testkit    fixtures, snapshots, and integration-test utilities
 ```
 
-See [Project design](docs/PROJECT.md) for the product and technical plan, and
-[Contributing](CONTRIBUTING.md) for the proposed workflow.
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [Documentation index](docs/README.md) | Entry point for all project documents |
+| [Project design](docs/PROJECT.md) | Product principles, architecture, and pipeline |
+| [Roadmap](docs/ROADMAP.md) | Milestones, critical path, and release gates |
+| [Diagnostic style](docs/DIAGNOSTIC_STYLE.md) | Message grammar, layout, and examples |
+| [Compatibility](docs/COMPATIBILITY.md) | Support definitions and test expectations |
+| [Security and privacy](docs/SECURITY_AND_PRIVACY.md) | Threat model and redaction boundaries |
+| [Release process](docs/RELEASES.md) | Versioning, channels, and publication gates |
+| [GitHub workflow](docs/GITHUB_WORKFLOW.md) | Issues, labels, project board, and branches |
+| [Contributing](CONTRIBUTING.md) | Contributor workflow and engineering expectations |
+| [Support](SUPPORT.md) | Getting help and preparing a useful report |
+| [Governance](GOVERNANCE.md) | Decision-making and maintainer responsibilities |
 
 ## Roadmap
 
@@ -49,7 +72,9 @@ See [Project design](docs/PROJECT.md) for the product and technical plan, and
    documentation, packaging, and release automation.
 4. **Forge support:** stabilize the loader API and add a Forge adapter.
 
-The GitHub issue tracker is the source of truth for scoped work.
+Use the [public roadmap board](https://github.com/orgs/MinecraftProt/projects/1)
+for status and the [issue tracker](https://github.com/MinecraftProt/Stackframe/issues)
+for scoped requirements and acceptance criteria.
 
 ## Status and license
 
