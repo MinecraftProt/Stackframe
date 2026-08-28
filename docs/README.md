@@ -9,17 +9,19 @@ expected behavior.
 1. [Project design](PROJECT.md) explains the problem, principles, architecture,
    processing pipeline, and non-goals.
 2. [Roadmap](ROADMAP.md) turns that design into milestones and release gates.
-3. [Diagnostic style](DIAGNOSTIC_STYLE.md) defines what readable output means.
-4. [Compatibility](COMPATIBILITY.md) defines how support claims are earned.
-5. [Security and privacy](SECURITY_AND_PRIVACY.md) defines data boundaries.
-6. [Release process](RELEASES.md) defines version and publication rules.
-7. [GitHub workflow](GITHUB_WORKFLOW.md) explains how work moves through issues,
+3. [Diagnostic model](DIAGNOSTIC_MODEL.md) defines the immutable,
+   loader-independent contract shared by the pipeline and renderers.
+4. [Diagnostic style](DIAGNOSTIC_STYLE.md) defines what readable output means.
+5. [Compatibility](COMPATIBILITY.md) defines how support claims are earned.
+6. [Security and privacy](SECURITY_AND_PRIVACY.md) defines data boundaries.
+7. [Release process](RELEASES.md) defines version and publication rules.
+8. [GitHub workflow](GITHUB_WORKFLOW.md) explains how work moves through issues,
    the project board, branches, and pull requests.
-8. [Parallel workstreams](WORKSTREAMS.md) assigns module and file ownership so
+9. [Parallel workstreams](WORKSTREAMS.md) assigns module and file ownership so
    several workers can contribute without unnecessary conflicts.
-9. [Dependency waves](DEPENDENCIES.md) identifies which issues can start together
+10. [Dependency waves](DEPENDENCIES.md) identifies which issues can start together
    and which contracts must land first.
-10. [Worker handoff](HANDOFF.md) defines the context required when work changes
+11. [Worker handoff](HANDOFF.md) defines the context required when work changes
    sessions or unlocks a dependent task.
 
 ## Decision records
