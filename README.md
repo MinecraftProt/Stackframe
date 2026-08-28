@@ -35,8 +35,10 @@ claim that a mod is responsible without evidence.
 - Fail open: if formatting breaks, emit the original server error unchanged.
 - Protect secrets and personal data before output leaves the diagnostic pipeline.
 
-Stackframe is in the design and bootstrap phase. The first release will target
-Fabric servers; it is not ready for production use yet.
+Stackframe is in the design and bootstrap phase. The selected foundation baseline
+is a Minecraft 26.2 dedicated Fabric server on Java 25; this is not yet a support
+claim. See the [compatibility policy](docs/COMPATIBILITY.md) for exact pins and
+evidence requirements. Stackframe is not ready for production use yet.
 
 ## Planned architecture
 
