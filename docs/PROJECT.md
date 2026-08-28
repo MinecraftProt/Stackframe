@@ -116,7 +116,7 @@ Classifiers match typed exceptions and verified event attributes before falling
 back to message patterns. Each classifier returns its confidence and evidence.
 A low-confidence match cannot name a responsible mod or offer destructive help.
 Candidate confidence, conflict resolution, aggregation, and safe fallback follow
-[ADR 001](decisions/001-classifier-arbitration.md).
+[ADR 004](decisions/004-classifier-arbitration.md).
 
 Diagnostic code ranges should remain stable:
 

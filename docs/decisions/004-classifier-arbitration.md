@@ -1,4 +1,4 @@
-# ADR 001: Deterministic classifier arbitration
+# ADR 004: Deterministic classifier arbitration
 
 - **Status:** Proposed
 - **Date:** 2026-08-28
@@ -20,10 +20,12 @@ bounded, explainable, and safe when classifiers disagree or misbehave. It must
 also preserve independent failures rather than forcing an event into one
 diagnostic.
 
-Issue [#6](https://github.com/MinecraftProt/Stackframe/issues/6) owns the concrete
-immutable diagnostic and evidence model. This decision specifies the values and
-invariants that model must make representable at the classifier boundary; it does
-not define the complete diagnostic schema.
+[ADR 003](003-loader-independent-diagnostic-model.md) and the normative
+[diagnostic model](../DIAGNOSTIC_MODEL.md) define the immutable completed value
+that crosses module boundaries. This decision defines the pre-completion
+classifier boundary and the policy that selects the evidence and confidence
+references stored in that model; it does not extend or redefine the completed
+diagnostic schema.
 
 ## Decision
 
@@ -34,9 +36,9 @@ a deterministic snapshot of already-validated metadata supplied by an adapter.
 It does not read files, query platform APIs, use post-classification enrichment,
 or depend on Fabric, Forge, Minecraft, or logging implementation types.
 
-A classifier returns zero or more **candidates**. A candidate is a proposal, not
-an operator diagnostic. The eventual model from #6 must allow the arbitration
-boundary to carry at least:
+A classifier returns zero or more **candidates**. A candidate is a short-lived
+core proposal, not an operator diagnostic or a `DiagnosticDocument`. The
+pre-completion arbitration boundary must carry at least:
 
 - a stable classifier key and proposed diagnostic identity;
 - a stable **failure unit** identifying the normalized node or structured
@@ -47,9 +49,19 @@ boundary to carry at least:
 - evidence-backed facts, locations, blame claims, and help proposals; and
 - whether candidates with the same diagnostic identity may be combined.
 
-Concrete type names, collection types, and renderer-facing fields remain owned
-by #6. Diagnostic-code allocation remains owned by
+Concrete Java type names remain implementation work after the Gradle scaffold.
+Renderer-facing fields and limits remain defined by the diagnostic model.
+Diagnostic-code allocation remains owned by
 [#5](https://github.com/MinecraftProt/Stackframe/issues/5).
+
+After selection, the core maps retained claim evidence into the completed
+model's `EvidenceReference` values and records the assessment, classifier, local
+evidence references, and arbitration policy in `ConfidenceReference`. Arbitration
+strengths and capabilities are policy metadata used before completion; they do
+not add values to `EvidenceReference.kind` or ask renderers to recompute
+confidence. Failure-unit relationships map to the model's bounded
+`RelatedDiagnostic` tree, including `RELATED` and `AGGREGATE_ITEM` where
+applicable.
 
 A **failure unit** is the smallest independently actionable failure represented
 by normalized input. Examples are one causal node, one suppressed exception, or
@@ -179,12 +191,15 @@ separately or aggregated when they share a diagnostic identity and aggregation
 is declared safe. Aggregation must:
 
 - retain every item's stable unit key and evidence-backed facts in the completed
-  diagnostic or its structured child items;
+  diagnostic or its structured child items when the diagnostic-model limits
+  permit;
 - preserve canonical item order;
 - report the exact total and exact omitted count when the operator view folds a
   bounded list;
-- retain all items accepted by the normalized model in the correlated structured
-  or debug record; and
+- represent exclusions from the completed document through the model's
+  `BoundedList.omittedCount` and matching `Omission`;
+- retain all items accepted by the normalized model in the correlated debug
+  record; and
 - never combine contradictory values into one apparent fact.
 
 If independence cannot be proven, candidates share the root failure unit and
@@ -275,6 +290,12 @@ limits:
 | Evidence references per candidate after de-duplication | 32 |
 | Selected failure units before operator folding | 128 |
 | Development explanation entries | 512 |
+
+These are arbitration-stage limits. Completed-document construction then applies
+the diagnostic model's stricter output limits, including its maximum of 64
+diagnostic nodes. Folding or exclusion at that boundary is deterministic and
+uses the model's explicit omission contract; it does not silently discard a
+failure.
 
 Limits are applied after canonical sorting so repeated runs truncate the same
 items. Work budgets use deterministic counters, not elapsed-time races. A
@@ -410,7 +431,8 @@ competing hypotheses remain development-only.
 
 This repository does not yet contain the Gradle scaffold or executable core
 types, so this decision is validated as documentation and does not claim runtime
-tests exist. The implementation following #7 and #6 must add:
+tests exist. The implementation following #7 and the integrated diagnostic model
+must add:
 
 - table-driven fixtures for every decision-table row;
 - permutation tests proving classifier registration and candidate return order do
@@ -431,8 +453,9 @@ no-unsupported-blame guarantees.
 
 ## Follow-up
 
-- #6 should make the candidate evidence references and failure-unit identity
-  representable without adopting renderer or platform types.
+- The arbiter implementation must map selected evidence, confidence, related
+  diagnostics, and omissions into the completed contract from ADR 003 without
+  exposing short-lived candidate values to renderers.
 - #5 should register stable diagnostic identities, classifier keys, precedence,
   and machine-readable arbitration reason codes.
 - #9 should provide the decision-table, permutation, aggregation, malformed, and
