@@ -1,4 +1,4 @@
-# ADR 001: Initial platform baseline
+# ADR 002: Initial platform baseline
 
 - **Status:** Proposed
 - **Date:** 2026-08-28

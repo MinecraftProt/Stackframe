@@ -33,4 +33,4 @@ Statuses are `Proposed`, `Accepted`, `Rejected`, `Deprecated`, and `Superseded`.
 
 | ADR | Status | Decision |
 | --- | --- | --- |
-| [001](001-initial-platform-baseline.md) | Proposed | Initial Minecraft, Java, Fabric, Loom, and Gradle baseline |
+| [002](002-initial-platform-baseline.md) | Proposed | Initial Minecraft, Java, Fabric, Loom, and Gradle baseline |
