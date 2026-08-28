@@ -79,6 +79,8 @@ error[SF2003]: datapack validation failed
 
 Diagnostics must also have a plain representation and a versioned structured
 representation. Renderers consume the same model so their meaning cannot drift.
+The normative immutable value contract, invariants, limits, and schema evolution
+rules are defined in [DIAGNOSTIC_MODEL.md](DIAGNOSTIC_MODEL.md).
 
 ## Processing pipeline
 

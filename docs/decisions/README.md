@@ -6,7 +6,11 @@ they do not replace implementation acceptance criteria.
 
 ## Index
 
-- [ADR 001: License Stackframe under Apache-2.0](001-apache-2.0-license.md)
+| ADR | Status | Decision |
+| --- | --- | --- |
+| [001](001-apache-2.0-license.md) | Accepted | License Stackframe under Apache-2.0 |
+| [002](002-initial-platform-baseline.md) | Proposed | Initial Minecraft, Java, Fabric, Loom, and Gradle baseline |
+| [003](003-loader-independent-diagnostic-model.md) | Proposed | Loader-independent diagnostic model |
 
 Create an ADR when changing:
 
@@ -28,9 +32,3 @@ Create an ADR when changing:
 6. Never rewrite an accepted decision substantially; supersede it with a new ADR.
 
 Statuses are `Proposed`, `Accepted`, `Rejected`, `Deprecated`, and `Superseded`.
-
-## Records
-
-| ADR | Status | Decision |
-| --- | --- | --- |
-| [002](002-initial-platform-baseline.md) | Proposed | Initial Minecraft, Java, Fabric, Loom, and Gradle baseline |
