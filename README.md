@@ -14,7 +14,7 @@ error[SF1001]: failed to load the overworld
    |
    = cause: level metadata is unreadable
    = help: restore level.dat_old or a recent backup
-   = details: 14 internal stack frames collapsed
+   = trace: 14 internal stack frames collapsed
 ```
 
 Stackframe presents each failure at two levels:
