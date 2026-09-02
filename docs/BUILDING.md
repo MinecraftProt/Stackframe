@@ -10,13 +10,13 @@ for the first dependency resolution.
 On Unix-like systems:
 
 ```shell
-./gradlew clean build
+./gradlew --no-daemon --stacktrace --dependency-verification=strict clean build verifyModuleBoundaries
 ```
 
 On Windows:
 
 ```powershell
-.\gradlew.bat clean build
+.\gradlew.bat --no-daemon --stacktrace --dependency-verification=strict clean build verifyModuleBoundaries
 ```
 
 The build includes `verifyModuleBoundaries`, which rejects disallowed project
@@ -26,6 +26,19 @@ reports can also be inspected directly:
 ```shell
 ./gradlew :stackframe-core:dependencies :stackframe-renderer:dependencies
 ```
+
+## Continuous integration
+
+GitHub Actions runs the exact command above for pull requests targeting `dev`
+and pushes to `main` or `dev`. CI validates the committed wrapper before using
+it, provisions Temurin Java 25, and preserves Gradle dependency verification and
+locking. It compiles, tests, remaps, and packages the normal Fabric artifact but
+does not start a Minecraft server or accept the EULA.
+
+When verification fails, the workflow uploads any Gradle problem reports, test
+reports, and test result XML as a `verification-reports-...` artifact on the
+failed Actions run. These artifacts are retained for five days. Runtime server
+directories, logs, and EULA files are never uploaded.
 
 ## Development dedicated server
 
