@@ -1,0 +1,26 @@
+{
+    "schemaVersion": 1,
+    "id": "stackframe",
+    "version": "${version}",
+    "name": "Stackframe",
+    "description": "Readable, structured diagnostics for Minecraft dedicated servers.",
+    "authors": [
+        "MinecraftProt contributors"
+    ],
+    "contact": {
+        "issues": "https://github.com/MinecraftProt/Stackframe/issues",
+        "sources": "https://github.com/MinecraftProt/Stackframe"
+    },
+    "license": "Apache-2.0",
+    "environment": "server",
+    "entrypoints": {
+        "main": [
+            "org.minecraftprot.stackframe.fabric.StackframeFabric"
+        ]
+    },
+    "depends": {
+        "fabricloader": "0.19.3",
+        "minecraft": "26.2",
+        "java": ">=25"
+    }
+}

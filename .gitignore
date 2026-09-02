@@ -2,6 +2,9 @@
 build/
 out/
 run/
+eula.txt
+libraries/
+versions/
 
 *.class
 *.log

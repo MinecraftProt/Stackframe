@@ -43,6 +43,20 @@ is a Minecraft 26.2 dedicated Fabric server on Java 25; this is not yet a suppor
 claim. See the [compatibility policy](docs/COMPATIBILITY.md) for exact pins and
 evidence requirements. Stackframe is not ready for production use yet.
 
+## Development
+
+Use the committed Gradle wrapper to build and test the four-module server
+foundation:
+
+```shell
+./gradlew clean build
+```
+
+Windows users can run `.\gradlew.bat clean build`. See
+[Building Stackframe](docs/BUILDING.md) for toolchain provisioning, dependency
+checks, dedicated-server startup, module boundaries, and the development artifact
+location.
+
 ## Planned architecture
 
 ```text
@@ -69,6 +83,7 @@ stackframe-testkit    fixtures, snapshots, and integration-test utilities
 | [GitHub workflow](docs/GITHUB_WORKFLOW.md) | Issues, labels, project board, and branches |
 | [Parallel workstreams](docs/WORKSTREAMS.md) | Module ownership and multi-worker boundaries |
 | [Dependency waves](docs/DEPENDENCIES.md) | Safe order for parallel issue execution |
+| [Building Stackframe](docs/BUILDING.md) | Build, test, development server, and artifact instructions |
 | [Worker handoff](docs/HANDOFF.md) | Standard context transfer between sessions |
 | [Contributing](CONTRIBUTING.md) | Contributor workflow and engineering expectations |
 | [Support](SUPPORT.md) | Getting help and preparing a useful report |
