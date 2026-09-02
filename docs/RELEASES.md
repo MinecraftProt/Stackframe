@@ -53,6 +53,26 @@ No branch name contains a person's name, username, or initials.
 - Shared codes retain identical meanings.
 - Forge-specific limitations and artifact identity are unambiguous.
 
+## Fabric client alpha gates
+
+- The client scope, UX, threading, privacy, and artifact contract is approved.
+- Client and dedicated-server artifacts have unambiguous names and metadata.
+- Fabric client capture preserves vanilla logs and crash reports on every
+  formatter failure path.
+- The in-game view passes keyboard, narration, scaling, redaction, and fallback
+  scenarios.
+- Exact supported Minecraft, Java, Fabric, operating-system, and relevant
+  graphics assumptions have client-specific evidence.
+- No server compatibility claim is reused as client evidence.
+
+## Forge client alpha gates
+
+- Fabric client contracts are proven and the shared loader SPI is stable.
+- Forge server and client adapters pass shared fallback, redaction, and
+  trace-preservation tests.
+- Shared diagnostic codes retain the same meaning across side and loader.
+- Forge client artifact identity and exact compatibility rows are published.
+
 ## Publication
 
 Release automation should:

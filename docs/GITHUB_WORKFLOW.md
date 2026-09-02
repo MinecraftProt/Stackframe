@@ -30,6 +30,7 @@ diagnostic request form. Broader product behavior uses the feature form.
 | M1 - Fabric MVP | Safe, usable Fabric alpha |
 | M2 - Production readiness | Bounded, private, maintainable Fabric release |
 | M3 - Forge support | Forge adapter with shared diagnostic semantics |
+| M4 - Client support | Separate Fabric-first client diagnostics and later Forge client support |
 
 Dependencies, workstreams, and exit criteria are in [ROADMAP.md](ROADMAP.md).
 
@@ -48,6 +49,7 @@ Dependencies, workstreams, and exit criteria are in [ROADMAP.md](ROADMAP.md).
 - `area: renderer`: ANSI, plain, terminal layout, structured output.
 - `area: fabric`: Fabric and Minecraft integration.
 - `area: forge`: Forge integration.
+- `area: client`: client lifecycle, UI, crash handling, and client artifacts.
 - `area: tooling`: build, tests, CI, publication.
 - `area: docs`: operator and contributor documentation.
 - `area: security`: privacy, redaction, supply chain, unsafe input.
@@ -88,9 +90,9 @@ block; otherwise return it to Todo and document the dependency.
 
 ## Workstream epics
 
-Six epic issues group the implementation backlog by ownership boundary: core,
-renderer, Fabric, verification, documentation/release, and Forge. Each scoped
-issue has one parent epic and one `Workstream` field value.
+Seven epic issues group the implementation backlog by ownership boundary: core,
+renderer, Fabric, verification, documentation/release, Forge, and client. Each
+scoped issue has one parent epic and one `Workstream` field value.
 
 Epics cross milestones and therefore do not carry a milestone themselves.
 Milestones answer *when*; workstreams answer *where and by whom*.

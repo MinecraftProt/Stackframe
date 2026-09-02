@@ -20,6 +20,7 @@ An epic groups related issues but is not itself an implementation branch.
 | Verification and compatibility | `stackframe-testkit/`, test fixtures, scoped CI | all modules in test scope | production-only testkit dependencies |
 | Documentation and release | `docs/`, root policy files, scoped release config | public contracts from all modules | unpublished assumptions presented as fact |
 | Forge platform | `stackframe-forge/` | core, renderer, stable platform SPI | Fabric |
+| Client platform | planned `stackframe-fabric-client/` and `stackframe-forge-client/` | core, renderer, client contract, stable platform SPI for Forge | dedicated-server internals as shared contracts |
 
 Root Gradle settings, version catalogs, shared CI, README navigation, and public
 contract documents are coordination hotspots. An issue touching one names the
@@ -97,6 +98,20 @@ Owns:
 
 Forge work starts after the relevant core and SPI contracts are accepted. It
 does not copy Fabric internals into shared modules.
+
+### Client platform
+
+Owns:
+
+- client lifecycle, uncaught failure, crash, and resource-reload capture;
+- accessible in-game diagnostics and crash presentation;
+- client-only metadata, environment, graphics, and UI integration;
+- separately identified Fabric and later Forge client artifacts;
+- client compatibility and privacy evidence.
+
+Client work reuses shared diagnostic meanings and renderers. Client-only
+Minecraft, Fabric, Forge, UI, graphics, account, and connection state remains in
+client platform modules. Forge client work waits for the shared platform SPI.
 
 ## Starting an issue
 

@@ -2,9 +2,9 @@
 
 ## What Stackframe is
 
-Stackframe is a server-side diagnostics mod for Minecraft. Its job is to convert
-exceptions and error log events into a consistent message that helps a server
-operator answer four questions quickly:
+Stackframe is a Minecraft diagnostics mod. Its first product is a dedicated
+server edition that converts exceptions and error log events into a consistent
+message that helps an operator answer four questions quickly:
 
 1. What failed?
 2. Where did it fail?
@@ -15,8 +15,10 @@ The presentation is inspired by `rustc`: a short title, a stable diagnostic
 code, relevant context, cause notes, and practical help. Stackframe is not a
 general log theme and must not rewrite ordinary informational output.
 
-The initial platform is Fabric. Forge support comes after the loader-independent
-API has been proven by the Fabric implementation.
+The initial platform is a Fabric dedicated server. Forge server support follows
+after the loader-independent API has been proven. A separate client edition is a
+later milestone: Fabric client first, then Forge client after the shared platform
+SPI is stable.
 
 ## Product principles
 
@@ -169,6 +171,12 @@ stackframe-fabric
 stackframe-forge
   depends on core and renderer; Forge lifecycle and logging integration
 
+stackframe-fabric-client
+  planned; Fabric client lifecycle, crash capture, and in-game presentation
+
+stackframe-forge-client
+  planned; Forge client adapter through the stable shared platform SPI
+
 stackframe-testkit
   shared exception fixtures, fake platform metadata, golden-file helpers
 ```
@@ -238,6 +246,13 @@ Stackframe's own failures.
 Extract lessons from Fabric into a stable platform SPI, implement Forge capture
 and metadata adapters, and run the same contract fixtures for both loaders.
 
+### Client edition
+
+Define client-specific lifecycle, UI, threading, privacy, and artifact boundaries;
+ship a separate Fabric client artifact; then implement Forge client support
+through the shared platform SPI. Client diagnostics reuse the core model, codes,
+redaction, and renderer semantics rather than becoming a separate language.
+
 ## Non-goals for the first release
 
 - Replacing every normal server log line.
@@ -245,7 +260,8 @@ and metadata adapters, and run the same contract fixtures for both loaders.
 - Automatically editing configuration or world data.
 - Uploading diagnostics to an external service.
 - Assigning blame based only on the first non-Minecraft stack frame.
-- Supporting client-only crashes.
+- Supporting client-only crashes in the initial dedicated-server release. They
+  are addressed by the later client-edition milestone.
 
 ## Definition of a successful MVP
 

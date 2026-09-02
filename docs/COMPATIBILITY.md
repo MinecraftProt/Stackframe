@@ -36,7 +36,7 @@ The first Fabric implementation targets this exact baseline, selected on
 
 | Dimension | Selected value | Boundary |
 | --- | --- | --- |
-| Environment | Dedicated server | Client-only operation and client-only crashes are outside the first release |
+| Environment | Dedicated server | Client-only operation and client-only crashes are outside the first release and require the separate planned client artifact |
 | Minecraft Java Edition | `26.2` | Exact version; snapshots, release candidates, and other stable lines are not implied compatible |
 | Java runtime | Java `25` | Minimum runtime; use a current patched Java 25 build |
 | Java toolchain | Java `25`, `--release 25` | Eclipse Temurin is the reference CI vendor; other conforming Java 25 vendors require their own evidence |
@@ -79,7 +79,7 @@ should deploy Stackframe.
 | Minecraft versions other than `26.2` | Unsupported | Minecraft compatibility is exact-version by default |
 | Java versions below 25 | Unsupported | The Minecraft 26.2 dedicated server requires Java 25 |
 | Minecraft snapshots or release candidates | Unsupported | Pre-releases are not release targets |
-| Client-only environments or failures | Unsupported | Stackframe's first release is dedicated-server-only |
+| Client-only environments or failures | Unsupported by the server artifact | A separate Fabric-first client edition is planned in milestone M4 |
 | Forge or another loader | Unsupported | Fabric is the only initial loader |
 
 An exact row becomes **tested** only after its evidence is recorded. It becomes
@@ -95,6 +95,11 @@ the loader-independent contracts and the platform SPI is stabilized.
 
 Loader modules own lifecycle hooks, platform metadata, commands, and environment
 paths. Core diagnostic meanings and renderer behavior remain shared.
+
+The client edition is published as a separate artifact with its own exact
+Minecraft, Java, loader, operating-system, graphics, and UI evidence. A server
+support claim never implies client support. Fabric client support comes first;
+Forge client support requires the shared platform SPI and Forge server adapter.
 
 ## Minecraft version policy
 

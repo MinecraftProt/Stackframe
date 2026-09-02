@@ -1,6 +1,6 @@
 # Roadmap
 
-Stackframe is delivered in four dependency-ordered milestones. The
+Stackframe is delivered in five dependency-ordered milestones. The
 [GitHub roadmap board](https://github.com/orgs/MinecraftProt/projects/1) is the
 live status view; this document records the intended outcomes and release gates.
 
@@ -19,6 +19,9 @@ flowchart LR
     I --> J[Production hardening]
     J --> K[Loader SPI]
     K --> L[Forge alpha]
+    L --> M[Client scope and privacy contract]
+    M --> N[Fabric client alpha]
+    N --> O[Forge client adapter]
 ```
 
 Work outside this path can proceed in parallel when its input contracts are
@@ -122,6 +125,37 @@ safety contracts as Fabric.
 - Exact Forge and Minecraft versions are published in the compatibility matrix.
 - Fabric behavior does not regress as a consequence of SPI extraction.
 
+## M4 - Client support
+
+**Outcome:** a separately packaged client edition that presents client failures
+with the same bounded, evidence-based diagnostic language as the server edition.
+
+### Workstreams
+
+- **Contract:** define client scope, UX, artifact, threading, and privacy
+  boundaries (#63).
+- **Fabric platform:** bootstrap the client module (#60), capture client failures
+  safely (#61), and add specialized client diagnostics (#65).
+- **Presentation:** build an accessible in-game diagnostic and crash view (#62).
+- **Proof and release:** create a Fabric client matrix (#66) and publish the first
+  Fabric client alpha (#59).
+- **Forge later:** implement the Forge client adapter after the shared SPI and
+  Forge server contracts stabilize (#64).
+
+### Exit criteria
+
+- The client artifact is separate and cannot be confused with the server artifact.
+- Fabric client startup, runtime, resource reload, disconnect, and crash failures
+  preserve original logs and crash reports.
+- The in-game view is keyboard accessible, narrated, scale-aware, redacted, and
+  has a plain fallback when rendering is unavailable.
+- Compatibility claims name exact Minecraft, Java, loader, operating-system, and
+  relevant graphics assumptions.
+- Client data such as account identifiers, chat, server addresses, screenshots,
+  clipboard contents, and local paths follows an approved privacy contract.
+- Forge client support reuses the shared SPI and diagnostic meanings rather than
+  duplicating Fabric client internals.
+
 ## Scope control
 
 New work enters the earliest milestone whose exit criteria require it. Moving an
@@ -129,5 +163,6 @@ issue earlier requires a dependency or release-safety reason, not only
 convenience. Moving work later requires updating affected exit criteria and
 documenting the resulting limitation.
 
-The first releases do not rewrite normal log lines, edit server data, upload
-diagnostics automatically, or support client-only crashes.
+The first server releases do not rewrite normal log lines, edit server data,
+upload diagnostics automatically, or handle client-only crashes. Client-only
+failures are reserved for M4 and its separate artifacts.

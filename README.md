@@ -1,7 +1,9 @@
 # Stackframe
 
-Stackframe is a server-side Minecraft mod that turns noisy console failures into
-concise, structured diagnostics inspired by the Rust compiler.
+Stackframe is a Minecraft diagnostics mod that turns noisy failures into concise,
+structured diagnostics inspired by the Rust compiler. Development starts with
+dedicated servers; a separate client edition is planned after the server
+foundation is production-ready.
 
 Instead of forcing an administrator to decode a wall of stack frames, Stackframe
 will identify the failure, show the useful context, explain the likely cause,
@@ -31,6 +33,7 @@ claim that a mod is responsible without evidence.
 - Preserve the original exception and stack trace for debugging.
 - Work in plain terminals, ANSI-capable terminals, files, and CI logs.
 - Start with Fabric, while keeping the core independent enough for Forge later.
+- Reuse the same diagnostic language in a future Fabric-first client edition.
 - Remain useful when an error is unknown by providing a safe generic diagnostic.
 - Fail open: if formatting breaks, emit the original server error unchanged.
 - Protect secrets and personal data before output leaves the diagnostic pipeline.
@@ -47,6 +50,8 @@ stackframe-core       loader-independent diagnostic model and pipeline
 stackframe-renderer   terminal, plain-text, and structured output
 stackframe-fabric     Fabric/Minecraft integration
 stackframe-forge      Forge/Minecraft integration after the shared SPI stabilizes
+stackframe-fabric-client  planned Fabric client integration and in-game view
+stackframe-forge-client   planned Forge client adapter after the shared SPI
 stackframe-testkit    fixtures, snapshots, and integration-test utilities
 ```
 
@@ -77,6 +82,8 @@ stackframe-testkit    fixtures, snapshots, and integration-test utilities
 3. **Production readiness:** performance, redaction, structured output,
    documentation, packaging, and release automation.
 4. **Forge support:** stabilize the loader API and add a Forge adapter.
+5. **Client support:** ship a separate Fabric client edition, then add a Forge
+   client adapter after the shared platform contracts are stable.
 
 Use the [public roadmap board](https://github.com/orgs/MinecraftProt/projects/1)
 for status and the [issue tracker](https://github.com/MinecraftProt/Stackframe/issues)

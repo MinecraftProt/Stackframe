@@ -108,6 +108,23 @@ Forge work has a strict provider chain:
 Research and disposable fixtures may begin earlier, but no worker changes the
 shared SPI from an unpublished Forge assumption.
 
+## Wave 6 - Client edition
+
+Client work begins after the production server contracts are stable:
+
+1. #63 defines client scope, UI, privacy, threading, and artifact boundaries.
+2. #60 adds the separate Fabric client module after #7 establishes the build.
+3. #61 implements fail-open Fabric client capture.
+4. #62 and #65 can proceed in parallel after capture and model contracts are
+   available.
+5. #66 proves exact client compatibility rows.
+6. #59 publishes the first Fabric client alpha.
+7. #64 adds Forge client support only after #26 and the Forge server capture
+   contracts are stable.
+
+Client workers reuse core and renderer contracts. They do not place client-only
+types into shared modules or infer client support from server test evidence.
+
 ## Selecting work for a new subchat
 
 Give each new session:
