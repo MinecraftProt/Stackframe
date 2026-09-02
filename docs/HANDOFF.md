@@ -4,6 +4,11 @@ Use this format when an issue changes owner, a session ends before completion, o
 one pull request unlocks dependent work. Put the handoff in the issue or pull
 request so it remains available to future workers.
 
+After the handoff, every worker adds one concise comment to the standing
+[engineering retrospective](https://github.com/MinecraftProt/Stackframe/issues/70).
+The retrospective records process lessons; it does not repeat the handoff or PR
+summary.
+
 ## Handoff template
 
 ```markdown
@@ -59,3 +64,18 @@ to the previous chat transcript to understand:
 
 Do not paste secrets, private server data, or huge command logs. Link persistent
 repository evidence and summarize only the relevant result.
+
+## Retrospective entry
+
+Use the template in the standing retrospective issue. Include:
+
+- the issue and PR;
+- what worked;
+- what slowed progress;
+- what was surprising;
+- one specific improvement for the next worker;
+- an issue link for actionable follow-up, or `None`.
+
+Write one entry per work cycle after validation and PR handoff, before the worker
+stops. Reviewers or coordinators add another entry only when their work produced
+a distinct lesson.

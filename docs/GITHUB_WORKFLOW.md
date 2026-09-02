@@ -108,6 +108,24 @@ does not close a milestone issue until all acceptance criteria are met.
 `main` receives reviewed release-ready changes from `dev` or an explicitly
 approved urgent fix. Release tags are created only from `main`.
 
+## Retrospectives
+
+The standing
+[engineering retrospective](https://github.com/MinecraftProt/Stackframe/issues/70)
+collects reusable lessons without forcing parallel branches to edit a shared
+file.
+
+- Every issue worker writes one structured comment after completing its PR
+  handoff and validation.
+- Reviewers and coordinators add a follow-up only when review, rebase, CI, merge,
+  or release work produced an additional lesson.
+- Entries describe what worked, what slowed progress, what surprised the worker,
+  and one concrete change for future work.
+- Actionable follow-up links an existing issue or creates a scoped issue; the
+  retrospective is not a hidden backlog.
+- Entries never include secrets, private server data, raw internal reasoning, or
+  large command logs.
+
 ## Triage
 
 Maintainers regularly:
