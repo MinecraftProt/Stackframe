@@ -35,6 +35,13 @@ it, provisions Temurin Java 25, and preserves Gradle dependency verification and
 locking. It compiles, tests, remaps, and packages the normal Fabric artifact but
 does not start a Minecraft server or accept the EULA.
 
+Strict Gradle verification covers downloaded build, Fabric, and library
+artifacts. Loom also verifies its downloaded Minecraft JAR before transforming
+it. The exact `net.minecraft:minecraft-server-deobf:26.2` JAR in Loom's local
+file-backed repository is trusted without a fixed checksum because Loom generates
+it from that verified input and its transformed bytes vary by build platform.
+No other group, module, version, or file is covered by this exception.
+
 When verification fails, the workflow uploads any Gradle problem reports, test
 reports, and test result XML as a `verification-reports-...` artifact on the
 failed Actions run. These artifacts are retained for five days. Runtime server
