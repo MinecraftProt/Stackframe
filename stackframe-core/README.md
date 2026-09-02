@@ -20,9 +20,21 @@ completed, redacted diagnostic and do not call back into platform APIs.
 
 The normative model is defined in
 [`docs/DIAGNOSTIC_MODEL.md`](../docs/DIAGNOSTIC_MODEL.md) and its rationale in
-[ADR 003](../docs/decisions/003-loader-independent-diagnostic-model.md). Java
-types and executable contract tests are deferred until the Gradle scaffold in
-[issue #7](https://github.com/MinecraftProt/Stackframe/issues/7) is available.
+[ADR 003](../docs/decisions/003-loader-independent-diagnostic-model.md).
+
+## Java diagnostic contract
+
+Package `org.minecraftprot.stackframe.diagnostic` implements schema `1.0` as
+deeply immutable Java 25 values. `DiagnosticDocument` is the sole completed
+renderer input. Construction validates local references, post-redaction text,
+source coordinates, trace accounting, finite tree identity, hard collection and
+text limits, exact omission paths and counts, and the UTF-8 document budget.
+
+`CandidateText` exists only on the pre-redaction side of the ownership boundary.
+Redacted and omitted `DisplayText` factories derive canonical typed markers
+without accepting protected originals. Redaction policy, throwable
+normalization, arbitration, trace storage, diagnostic-code allocation, and
+rendering remain separate provider contracts.
 
 ## Worker notes
 
