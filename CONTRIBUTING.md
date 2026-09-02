@@ -34,7 +34,7 @@ agent sessions work at once.
 - Use the [handoff template](docs/HANDOFF.md) when work changes owner or unlocks a
   dependent issue.
 - Add one concise entry to the standing
-  [engineering retrospective](https://github.com/MinecraftProt/Stackframe/issues/70)
+  [engineering retrospective project](https://github.com/orgs/MinecraftProt/projects/2)
   after the PR handoff is complete.
 
 ## Development workflow

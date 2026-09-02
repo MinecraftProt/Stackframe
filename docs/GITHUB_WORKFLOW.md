@@ -110,15 +110,15 @@ approved urgent fix. Release tags are created only from `main`.
 
 ## Retrospectives
 
-The standing
-[engineering retrospective](https://github.com/MinecraftProt/Stackframe/issues/70)
+The separate
+[Stackframe Retrospective project](https://github.com/orgs/MinecraftProt/projects/2)
 collects reusable lessons without forcing parallel branches to edit a shared
-file.
+file or mixing lessons into the delivery roadmap.
 
-- Every issue worker writes one structured comment after completing its PR
-  handoff and validation.
-- Reviewers and coordinators add a follow-up only when review, rebase, CI, merge,
-  or release work produced an additional lesson.
+- Every issue worker creates one draft card after completing its PR handoff and
+  validation, fills the project fields, and sets the card to Done.
+- Reviewers and coordinators create another card only when review, rebase, CI,
+  merge, or release work produced an additional lesson.
 - Entries describe what worked, what slowed progress, what surprised the worker,
   and one concrete change for future work.
 - Actionable follow-up links an existing issue or creates a scoped issue; the
