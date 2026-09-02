@@ -115,16 +115,22 @@ The separate
 collects reusable lessons without forcing parallel branches to edit a shared
 file or mixing lessons into the delivery roadmap.
 
-- Every issue worker creates one draft card after completing its PR handoff and
-  validation, fills the project fields, and sets the card to Done.
-- Reviewers and coordinators create another card only when review, rebase, CI,
-  merge, or release work produced an additional lesson.
-- Entries describe what worked, what slowed progress, what surprised the worker,
-  and one concrete change for future work.
-- Actionable follow-up links an existing issue or creates a scoped issue; the
-  retrospective is not a hidden backlog.
-- Entries never include secrets, private server data, raw internal reasoning, or
-  large command logs.
+The board has three columns:
+
+- **Went well:** a practice, tool, test, or decision worth repeating.
+- **Needs improvement:** real friction, mistakes, surprises, or missing contracts.
+- **Action items:** a specific next change, linked to an issue when implementation
+  work is required.
+
+Every issue worker adds at least one Went well card after completing its PR
+handoff and validation. Add one card per distinct improvement point or action
+item; do not combine all lessons into one report or invent a problem when none
+occurred. Reviewers and coordinators add cards only when review, rebase, CI,
+merge, or release work produced a distinct lesson.
+
+Each card contains one idea and fills Workstream, Outcome, Issue or PR, Worker,
+and Date. Cards never include secrets, private server data, raw internal
+reasoning, or large command logs. The retrospective is not a hidden backlog.
 
 ## Triage
 

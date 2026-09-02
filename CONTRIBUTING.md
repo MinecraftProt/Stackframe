@@ -33,9 +33,10 @@ agent sessions work at once.
 - Rebase or merge from `dev` before handing dependent work to another worker.
 - Use the [handoff template](docs/HANDOFF.md) when work changes owner or unlocks a
   dependent issue.
-- Add one concise entry to the standing
-  [engineering retrospective project](https://github.com/orgs/MinecraftProt/projects/2)
-  after the PR handoff is complete.
+- Add concise, one-idea cards to the
+  [engineering retrospective board](https://github.com/orgs/MinecraftProt/projects/2)
+  after the PR handoff is complete: what went well, genuine improvement points,
+  and concrete action items.
 
 ## Development workflow
 
@@ -46,7 +47,7 @@ agent sessions work at once.
 5. Confirm that plain output conveys everything shown with ANSI styling.
 6. Document user-visible configuration or diagnostic-code changes.
 7. Open a focused pull request and link the issue.
-8. Complete the handoff and retrospective entry before stopping work.
+8. Complete the handoff and retrospective cards before stopping work.
 
 ## Engineering expectations
 
