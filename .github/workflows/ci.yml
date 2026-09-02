@@ -53,6 +53,7 @@ jobs:
         with:
           name: verification-reports-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
+            **/build/reports/dependency-verification/**
             **/build/reports/problems/**
             **/build/reports/tests/**
             **/build/test-results/**
