@@ -40,7 +40,13 @@ artifacts. Loom also verifies its downloaded Minecraft JAR before transforming
 it. The exact `net.minecraft:minecraft-server-deobf:26.2` JAR in Loom's local
 file-backed repository is trusted without a fixed checksum because Loom generates
 it from that verified input and its transformed bytes vary by build platform.
-No other group, module, version, or file is covered by this exception.
+Gradle routes that module and all of its metadata exclusively to Loom's exact
+local repository under the Gradle User Home, and every other Maven repository
+explicitly excludes it. `verifyGeneratedMinecraftRepository` also fails the build
+unless the resolved JAR's real path is inside that repository. These controls
+prevent a remote repository, including one using artifact-only metadata, from
+serving bytes covered by the exception. No other group, module, version, or file
+is trusted without a checksum.
 
 When verification fails, the workflow uploads any Gradle problem reports, test
 reports, and test result XML as a `verification-reports-...` artifact on the
