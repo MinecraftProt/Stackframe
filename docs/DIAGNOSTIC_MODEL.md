@@ -22,9 +22,9 @@ The model:
 - makes truncation and omission explicit; and
 - evolves through an independently versioned structured schema.
 
-The contract describes logical types. Java package names, constructor APIs, and
-serialization annotations are deferred until the Gradle scaffold in
-[issue #7](https://github.com/MinecraftProt/Stackframe/issues/7) exists.
+The contract describes logical types. The Java 25 implementation is exposed from
+`stackframe-core` in package `org.minecraftprot.stackframe.diagnostic`.
+Serialization annotations remain outside the model and belong to issue #30.
 
 ## Completed diagnostic
 
@@ -419,13 +419,13 @@ diagnostic contract.
   preserves the same ordered facts, relationships, identifiers, omissions, and
   trace state.
 
-## Deferred executable acceptance
+## Executable acceptance
 
-The repository intentionally has no Java/Gradle scaffold yet. Therefore issue
-#6 establishes the reviewable normative contract but cannot honestly provide
-compiled immutable classes or executable renderer contract tests.
+Issue #6 established this normative provider contract before the Java/Gradle
+scaffold existed. Issue #68 supplies the compiled immutable model and its focused
+contract tests in `stackframe-core`.
 
-After issue #7 lands, implementation work MUST:
+Executable model acceptance MUST:
 
 1. encode these logical types in `stackframe-core` without platform or logging
    dependencies;
@@ -437,5 +437,6 @@ After issue #7 lands, implementation work MUST:
 5. verify that completed models cannot contain `CandidateText` or retain source
    throwables and server objects.
 
-Until that executable acceptance passes, this specification is a provider
-contract, not a claim that the runtime implementation exists.
+Renderer-specific semantic-equivalence fixtures remain with the ANSI/plain and
+structured renderer work in issues #3 and #30; those consumers MUST use this
+completed model rather than defining parallel values.
