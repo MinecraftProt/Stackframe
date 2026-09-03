@@ -1,0 +1,17 @@
+error[SF2003]: datapack validation failed
+location: world/datapacks/example/data/example/item.json:12:9-12:28
+context line 12: "type": "minecraft:unknown"
+annotation line 12 columns 9-28 primary: unknown registry value
+location: item registry
+cause: no registry entry matches "minecraft:unknown"
+context: validation ran during world loading
+note: the datapack was not applied
+evidence: validated registry content (source: approved datapack source)
+relation: cause
+  note[SF0001]: registry lookup failed
+  note: the identifier was preserved in the debug record
+  trace: no originating trace
+help: check the identifier and whether its providing mod is installed
+redaction: 1 value generalized as path
+trace: 2 frames shown; 20 frames collapsed; 1 cause omitted; complete details preserved at local
+  diagnostic store as diagnostic record01; diagnostic diag0001; correlation ABC123

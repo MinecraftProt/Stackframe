@@ -1,0 +1,6 @@
+warning[SF2008]: unicode source needs review
+location: unicode/example.txt
+context line 7: é = 界 + 👩🏽‍💻
+                    ^^ annotation line 7 columns 6-7 secondary: wide
+evidence: validated Unicode source
+trace: no originating trace; diagnostic diag0001; correlation ABC123

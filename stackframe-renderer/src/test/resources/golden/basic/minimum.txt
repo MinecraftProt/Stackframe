@@ -1,0 +1,2 @@
+error[SF0001]: operation failed
+trace: no originating trace; diagnostic diag0001; correlation ABC123

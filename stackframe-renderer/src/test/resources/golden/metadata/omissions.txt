@@ -1,0 +1,7 @@
+error[SF0001]: generic diagnostic is bounded
+note: the complete trace could not be written
+omission: 2 values omitted from $.root.locations (reason: count limit)
+redaction: 3 values redacted as token
+omission: 1 value omitted from $.redactions (reason: byte budget)
+trace: complete details could not be preserved; 1 frame shown; 3 frames
+  collapsed; 2 causes omitted; diagnostic diag0003; correlation G7H8J9
