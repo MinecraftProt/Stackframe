@@ -4,9 +4,9 @@ Use this format when an issue changes owner, a session ends before completion, o
 one pull request unlocks dependent work. Put the handoff in the issue or pull
 request so it remains available to future workers.
 
-After the handoff, every worker creates one concise draft card in the separate
+After the handoff, every worker creates concise, one-idea cards in the separate
 [Stackframe Retrospective project](https://github.com/orgs/MinecraftProt/projects/2).
-The card records process lessons; it does not repeat the handoff or PR summary.
+The board records process lessons; it does not repeat the handoff or PR summary.
 
 ## Handoff template
 
@@ -66,16 +66,13 @@ repository evidence and summarize only the relevant result.
 
 ## Retrospective entry
 
-Use the template in the retrospective project's README. Include:
+Use the retrospective project's three columns:
 
-- the issue and PR;
-- what worked;
-- what slowed progress;
-- what was surprising;
-- one specific improvement for the next worker;
-- an issue link for actionable follow-up, or `None`.
+- **Went well:** at least one practice worth repeating.
+- **Needs improvement:** one card per genuine friction or surprise, when present.
+- **Action items:** one card per specific next change, linked to an implementation
+  issue when required.
 
-Write one entry per work cycle after validation and PR handoff, fill the
-Workstream, Outcome, Issue or PR, Worker, and Date fields, then set the card to
-Done before the worker stops. Reviewers or coordinators add another card only
-when their work produced a distinct lesson.
+Write one idea per card after validation and PR handoff. Fill Workstream,
+Outcome, Issue or PR, Worker, and Date before the worker stops. Reviewers or
+coordinators add cards only when their work produced a distinct lesson.

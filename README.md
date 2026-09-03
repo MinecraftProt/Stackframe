@@ -49,10 +49,12 @@ Use the committed Gradle wrapper to build and test the four-module server
 foundation:
 
 ```shell
-./gradlew clean build
+./gradlew --no-daemon --stacktrace --dependency-verification=strict clean build verifyModuleBoundaries
 ```
 
-Windows users can run `.\gradlew.bat clean build`. See
+Windows users can run
+`.\gradlew.bat --no-daemon --stacktrace --dependency-verification=strict clean build verifyModuleBoundaries`.
+This is the same verification command used by CI. See
 [Building Stackframe](docs/BUILDING.md) for toolchain provisioning, dependency
 checks, dedicated-server startup, module boundaries, and the development artifact
 location.

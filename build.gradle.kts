@@ -1,9 +1,12 @@
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.compile.JavaCompile
+import java.nio.file.Path
 import java.util.Properties
 
 plugins {
@@ -27,6 +30,10 @@ val forbiddenPlatformGroups = listOf(
     "net.minecraftforge",
     "org.apache.logging.log4j",
 )
+val generatedMinecraftGroup = "net.minecraft"
+val generatedMinecraftModule = "minecraft-server-deobf"
+val generatedMinecraftVersion = libs.versions.minecraft.get()
+val generatedMinecraftFile = "$generatedMinecraftModule-$generatedMinecraftVersion.jar"
 val allowedProjectDependencies = mapOf(
     "stackframe-core" to emptySet(),
     "stackframe-renderer" to setOf("stackframe-core"),
@@ -76,6 +83,38 @@ allprojects {
 }
 
 subprojects {
+    pluginManager.withPlugin("fabric-loom") {
+        val loomRepository = repositories.named("LoomGlobalMinecraft").get()
+        check(loomRepository is MavenArtifactRepository) {
+            "LoomGlobalMinecraft must be a Maven repository."
+        }
+
+        val expectedRepositoryPath = gradle.gradleUserHomeDir.toPath()
+            .resolve("caches/fabric-loom/minecraftMaven")
+            .toAbsolutePath()
+            .normalize()
+        check(loomRepository.url.scheme == "file") {
+            "LoomGlobalMinecraft must remain file-backed."
+        }
+        check(Path.of(loomRepository.url).toAbsolutePath().normalize() == expectedRepositoryPath) {
+            "LoomGlobalMinecraft must remain inside the Gradle User Home Loom cache."
+        }
+
+        repositories.withType<MavenArtifactRepository>().configureEach {
+            if (this !== loomRepository) {
+                content {
+                    excludeModule(generatedMinecraftGroup, generatedMinecraftModule)
+                }
+            }
+        }
+        repositories.exclusiveContent {
+            forRepositories(loomRepository)
+            filter {
+                includeModule(generatedMinecraftGroup, generatedMinecraftModule)
+            }
+        }
+    }
+
     if (name in setOf("stackframe-core", "stackframe-renderer")) {
         configurations.matching {
             it.name in setOf("compileClasspath", "runtimeClasspath")
@@ -177,6 +216,45 @@ val verifyGradleWrapper by tasks.registering {
     }
 }
 
+val verifyGeneratedMinecraftRepository by tasks.registering {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Verifies Loom's generated Minecraft artifact resolves only from its local repository."
+    dependsOn(":stackframe-fabric:compileJava")
+
+    doLast {
+        val fabricProject = project(":stackframe-fabric")
+        val loomRepository = fabricProject.repositories.named("LoomGlobalMinecraft").get()
+        check(loomRepository is MavenArtifactRepository) {
+            "LoomGlobalMinecraft must be a Maven repository."
+        }
+
+        val repositoryPath = Path.of(loomRepository.url).toRealPath()
+        val generatedArtifact = fabricProject.configurations
+            .getByName("compileClasspath")
+            .incoming
+            .artifacts
+            .artifacts
+            .single { artifact ->
+                val component = artifact.id.componentIdentifier as? ModuleComponentIdentifier
+                component?.group == generatedMinecraftGroup &&
+                    component.module == generatedMinecraftModule &&
+                    component.version == generatedMinecraftVersion &&
+                    artifact.file.name == generatedMinecraftFile
+            }
+        val artifactPath = generatedArtifact.file.toPath().toRealPath()
+
+        check(artifactPath.startsWith(repositoryPath)) {
+            "$generatedMinecraftGroup:$generatedMinecraftModule:$generatedMinecraftVersion " +
+                "must resolve from $repositoryPath, but resolved from $artifactPath."
+        }
+        logger.lifecycle(
+            "Verified {} resolves from Loom's local repository: {}",
+            "$generatedMinecraftGroup:$generatedMinecraftModule:$generatedMinecraftVersion",
+            repositoryPath,
+        )
+    }
+}
+
 tasks.named("check") {
-    dependsOn(verifyGradleWrapper, verifyModuleBoundaries)
+    dependsOn(verifyGradleWrapper, verifyModuleBoundaries, verifyGeneratedMinecraftRepository)
 }
