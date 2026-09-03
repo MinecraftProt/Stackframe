@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
@@ -162,6 +163,146 @@ class ThrowableNormalizerBoundsTest {
         assertEquals(0, nodes.get(10).causeReads);
     }
 
+    @Test
+    void totalFrameBudgetAppliesAcrossNodesWithExactPerNodeAccounting() {
+        var frames = frames(256, "example.Shared");
+        var root = new SharedDataThrowable("root", frames);
+        root.cause = new SharedDataThrowable("cause", frames);
+        var limits = new NormalizationLimits(
+                3, 3, 256, 1, 64, 300, 100_000, 400_000, 500_000);
+
+        var graph = new ThrowableNormalizer(limits).normalize(root);
+        var cause =
+                assertInstanceOf(NormalizedThrowable.class, graph.root().cause().orElseThrow());
+
+        assertEquals(256, graph.root().stackFrames().size());
+        assertEquals(44, cause.stackFrames().size());
+        assertEquals(212, cause.omittedFrameCount());
+        assertEquals(
+                NormalizedThrowable.FrameTruncationReason.TOTAL_FRAME_LIMIT,
+                cause.frameTruncationReason().orElseThrow());
+        assertEquals(300, graph.statistics().retainedFrames());
+        assertEquals(212, graph.statistics().omittedFrames());
+    }
+
+    @Test
+    void totalCodePointAndUtf8BudgetsProduceExactTextOmissions() {
+        var supplementary = "😀".repeat(20_000);
+        var codePointRoot = new SharedDataThrowable(supplementary, new StackTraceElement[0]);
+        codePointRoot.cause =
+                new SharedDataThrowable(supplementary, new StackTraceElement[0]);
+        var codePointLimits = new NormalizationLimits(
+                2, 2, 1, 1, 4_096, 2, 5_000, 100_000, 100_000);
+
+        var codePointGraph = new ThrowableNormalizer(codePointLimits).normalize(codePointRoot);
+        var codePointCause = (NormalizedThrowable) codePointGraph.root().cause().orElseThrow();
+        var codePointText = codePointCause.message().text().orElseThrow();
+
+        assertEquals(
+                NormalizedText.TruncationReason.TOTAL_CODE_POINT_LIMIT,
+                codePointText.truncationReason().orElseThrow());
+        assertEquals(
+                supplementary.length(),
+                codePointText.value().value().length() + codePointText.omittedUtf16Units());
+        assertEquals(5_000, codePointGraph.statistics().retainedTextCodePoints());
+
+        var utf8Limits = new NormalizationLimits(
+                1, 1, 1, 1, 4_096, 1, 10_000, 5_000, 100_000);
+        var utf8Graph = new ThrowableNormalizer(utf8Limits)
+                .normalize(new SharedDataThrowable(supplementary, new StackTraceElement[0]));
+        var utf8Text = utf8Graph.root().message().text().orElseThrow();
+
+        assertEquals(
+                NormalizedText.TruncationReason.TOTAL_UTF8_BYTE_LIMIT,
+                utf8Text.truncationReason().orElseThrow());
+        assertEquals(
+                supplementary.length(),
+                utf8Text.value().value().length() + utf8Text.omittedUtf16Units());
+        assertTrue(utf8Graph.statistics().retainedTextUtf8Bytes() <= 5_000);
+        assertTrue(5_000 - utf8Graph.statistics().retainedTextUtf8Bytes() < 4);
+    }
+
+    @Test
+    void scalarWorkBudgetStopsBeforeVisitingAnotherNode() {
+        var root = new SharedDataThrowable("", new StackTraceElement[0]);
+        root.cause = new SharedDataThrowable("", new StackTraceElement[0]);
+        var rootWork = 4 + root.getClass().getName().length();
+        var limits = new NormalizationLimits(
+                2, 2, 1, 1, 128, 2, 1_000, 4_000, rootWork);
+
+        var graph = new ThrowableNormalizer(limits).normalize(root);
+        var marker =
+                assertInstanceOf(ThrowableGraphMarker.class, graph.root().cause().orElseThrow());
+
+        assertEquals(ThrowableGraphMarker.Kind.SCALAR_WORK_LIMIT, marker.kind());
+        assertEquals(1, marker.omittedDirectNodes());
+        assertEquals(rootWork, graph.statistics().scalarWorkUnits());
+        assertEquals(1, graph.statistics().scalarWorkTruncations());
+    }
+
+    @Test
+    void malformedSurrogateLookaheadIsChargedExactly() {
+        var failure = new SharedDataThrowable("\uD800A", new StackTraceElement[0]);
+        var limits = new NormalizationLimits(
+                1, 1, 1, 1, 1, 1, 100, 100, 100);
+
+        var graph = new ThrowableNormalizer(limits).normalize(failure);
+        var message = graph.root().message().text().orElseThrow();
+
+        assertEquals("�", message.value().value());
+        assertEquals(1, message.extraInspectedUtf16Units());
+        assertEquals(
+                4 + 1 + 1 + 1,
+                graph.statistics().scalarWorkUnits());
+    }
+
+    @Test
+    void exhaustedWorkDoesNotPreallocateForAHostileSuppressedWidth() {
+        var root = new SharedDataThrowable("root", new StackTraceElement[0]);
+        var shared = new SharedDataThrowable("shared", new StackTraceElement[0]);
+        for (var index = 0; index < 100_000; index++) {
+            root.addSuppressed(shared);
+        }
+        var limits = new NormalizationLimits(
+                2, 2, 1, Integer.MAX_VALUE, 8, 1, 100, 400, 4);
+
+        var graph = assertDoesNotThrow(() -> new ThrowableNormalizer(limits).normalize(root));
+
+        assertEquals(0, graph.root().suppressed().size());
+        assertEquals(100_000, graph.root().omittedSuppressedCount());
+        assertEquals(
+                NormalizedThrowable.SuppressedTruncationReason.SCALAR_WORK_LIMIT,
+                graph.root().suppressedTruncationReason().orElseThrow());
+        assertEquals(4, graph.statistics().scalarWorkUnits());
+    }
+
+    @Test
+    void defaultsBoundSharedFramesAndHugeSupplementaryTextWithoutAmplification() {
+        var huge = "😀".repeat(100_000);
+        var sharedFrames = frames(256, huge);
+        var root = new SharedDataThrowable(huge, sharedFrames);
+        var cursor = root;
+        for (var index = 1; index < 256; index++) {
+            var next = new SharedDataThrowable(huge, sharedFrames);
+            cursor.cause = next;
+            cursor = next;
+        }
+
+        var graph = assertDoesNotThrow(() -> new ThrowableNormalizer().normalize(root));
+        var defaults = NormalizationLimits.DEFAULTS;
+
+        assertTrue(graph.statistics().retainedFrames() <= defaults.maxTotalFrames());
+        assertTrue(
+                graph.statistics().retainedTextCodePoints()
+                        <= defaults.maxTotalTextCodePoints());
+        assertTrue(
+                graph.statistics().retainedTextUtf8Bytes()
+                        <= defaults.maxTotalTextUtf8Bytes());
+        assertTrue(graph.statistics().scalarWorkUnits() <= defaults.maxScalarWorkUnits());
+        assertTrue(graph.statistics().omittedFrames() > 0);
+        assertTrue(graph.statistics().omittedTextUtf16Units() > 0);
+    }
+
     private static ThrowableNormalizerTest.MutableCauseThrowable chain(int nodes) {
         var root = new ThrowableNormalizerTest.MutableCauseThrowable("node-0");
         var cursor = root;
@@ -171,6 +312,15 @@ class ThrowableNormalizerBoundsTest {
             cursor = next;
         }
         return root;
+    }
+
+    private static StackTraceElement[] frames(int count, String declaringClass) {
+        var frames = new StackTraceElement[count];
+        for (var index = 0; index < count; index++) {
+            frames[index] =
+                    new StackTraceElement(declaringClass, "run", "Shared.java", index);
+        }
+        return frames;
     }
 
     private static final class CountingThrowable extends Throwable {
@@ -198,6 +348,33 @@ class ThrowableNormalizerBoundsTest {
         @Override
         public synchronized Throwable getCause() {
             causeReads++;
+            return cause;
+        }
+    }
+
+    private static final class SharedDataThrowable extends Throwable {
+        private final String message;
+        private final StackTraceElement[] frames;
+        private Throwable cause;
+
+        private SharedDataThrowable(String message, StackTraceElement[] frames) {
+            super(null, null, true, false);
+            this.message = message;
+            this.frames = frames;
+        }
+
+        @Override
+        public String getMessage() {
+            return message;
+        }
+
+        @Override
+        public StackTraceElement[] getStackTrace() {
+            return frames;
+        }
+
+        @Override
+        public synchronized Throwable getCause() {
             return cause;
         }
     }

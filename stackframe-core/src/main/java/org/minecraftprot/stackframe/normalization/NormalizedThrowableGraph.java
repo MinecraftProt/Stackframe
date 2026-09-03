@@ -17,5 +17,6 @@ public record NormalizedThrowableGraph(
         Objects.requireNonNull(root, "root");
         Objects.requireNonNull(limits, "limits");
         Objects.requireNonNull(statistics, "statistics");
+        NormalizedGraphValidator.validate(root, limits, statistics);
     }
 }

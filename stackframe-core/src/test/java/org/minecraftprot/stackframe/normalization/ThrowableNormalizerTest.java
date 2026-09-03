@@ -3,6 +3,7 @@ package org.minecraftprot.stackframe.normalization;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -117,11 +118,12 @@ class ThrowableNormalizerTest {
         assertEquals(9, text.sourceUtf16Length());
         assertEquals(4, text.omittedUtf16Units());
         assertEquals(1, text.malformedUtf16Units());
+        assertEquals(1, text.extraInspectedUtf16Units());
         assertTrue(text.truncated());
     }
 
     @Test
-    void copiesFrameScalarsAndUsesOnlyNeutralVerifiedCategories() {
+    void copiesFrameScalarsButTreatsForgedJdkNamesAsUnknown() {
         var failure = new Throwable("frames");
         failure.setStackTrace(new StackTraceElement[] {
             new StackTraceElement(
@@ -135,7 +137,7 @@ class ThrowableNormalizerTest {
         var unknown =
                 assertInstanceOf(NormalizedStackFrame.class, graph.root().stackFrames().get(1));
 
-        assertEquals(NormalizedStackFrame.Category.JDK, jdk.category());
+        assertEquals(NormalizedStackFrame.Category.UNKNOWN, jdk.category());
         assertEquals("java.lang.Thread", jdk.declaringClass().value().value());
         assertEquals(42, jdk.lineNumber());
         assertEquals(NormalizedStackFrame.Category.UNKNOWN, unknown.category());
@@ -175,6 +177,48 @@ class ThrowableNormalizerTest {
                 assertInstanceOf(ThrowableGraphMarker.class, unreadable.root().cause().orElseThrow());
         assertEquals(ThrowableGraphMarker.Kind.UNREADABLE_CAUSE, cause.kind());
         assertEquals(3, unreadable.statistics().unreadableValues());
+    }
+
+    @Test
+    void convertsAssertionErrorsFromEachOverridableThrowableAccessor() {
+        var message = normalizer.normalize(
+                new FailingAccessorThrowable(FailingAccessor.MESSAGE, new AssertionError()));
+        var stack = normalizer.normalize(
+                new FailingAccessorThrowable(FailingAccessor.STACK_TRACE, new AssertionError()));
+        var cause = normalizer.normalize(
+                new FailingAccessorThrowable(FailingAccessor.CAUSE, new AssertionError()));
+
+        assertEquals(NormalizedMessage.State.UNREADABLE, message.root().message().state());
+        assertEquals(
+                NormalizedThrowable.StackTraceState.UNREADABLE, stack.root().stackTraceState());
+        assertEquals(
+                ThrowableGraphMarker.Kind.UNREADABLE_CAUSE,
+                ((ThrowableGraphMarker) cause.root().cause().orElseThrow()).kind());
+    }
+
+    @Test
+    void convertsOtherNonfatalErrorsAndStillReadsFinalSuppressedAccessor() {
+        var linkage = normalizer.normalize(
+                new FailingAccessorThrowable(
+                        FailingAccessor.MESSAGE, new NoClassDefFoundError("untrusted")));
+        var suppressed = new Throwable("root");
+        suppressed.addSuppressed(new Throwable("child"));
+
+        assertEquals(NormalizedMessage.State.UNREADABLE, linkage.root().message().state());
+        assertEquals(1, normalizer.normalize(suppressed).root().suppressed().size());
+    }
+
+    @Test
+    @SuppressWarnings("removal")
+    void rethrowsOnlyFatalVmAndThreadFailures() {
+        assertThrows(
+                InternalError.class,
+                () -> normalizer.normalize(new FailingAccessorThrowable(
+                        FailingAccessor.MESSAGE, new InternalError("fatal"))));
+        assertThrows(
+                ThreadDeath.class,
+                () -> normalizer.normalize(new FailingAccessorThrowable(
+                        FailingAccessor.CAUSE, new ThreadDeath())));
     }
 
     @Test
@@ -239,6 +283,47 @@ class ThrowableNormalizerTest {
         @Override
         public synchronized Throwable getCause() {
             throw new IllegalStateException("cause unavailable");
+        }
+    }
+
+    private enum FailingAccessor {
+        MESSAGE,
+        STACK_TRACE,
+        CAUSE
+    }
+
+    private static final class FailingAccessorThrowable extends Throwable {
+        private final FailingAccessor accessor;
+        private final Error failure;
+
+        private FailingAccessorThrowable(FailingAccessor accessor, Error failure) {
+            super("fallback", null, true, false);
+            this.accessor = accessor;
+            this.failure = failure;
+        }
+
+        @Override
+        public String getMessage() {
+            if (accessor == FailingAccessor.MESSAGE) {
+                throw failure;
+            }
+            return super.getMessage();
+        }
+
+        @Override
+        public StackTraceElement[] getStackTrace() {
+            if (accessor == FailingAccessor.STACK_TRACE) {
+                throw failure;
+            }
+            return super.getStackTrace();
+        }
+
+        @Override
+        public synchronized Throwable getCause() {
+            if (accessor == FailingAccessor.CAUSE) {
+                throw failure;
+            }
+            return null;
         }
     }
 }

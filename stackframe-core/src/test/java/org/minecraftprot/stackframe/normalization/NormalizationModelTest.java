@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
@@ -34,9 +35,11 @@ class NormalizationModelTest {
                 entries,
                 0,
                 java.util.Optional.empty(),
+                java.util.Optional.empty(),
                 NormalizedThrowable.SuppressedState.EMPTY,
                 List.of(),
-                0);
+                0,
+                java.util.Optional.empty());
         entries.add(new MalformedStackFrame(1, MalformedStackFrame.Reason.NULL_ELEMENT));
 
         assertEquals(1, node.stackFrames().size());
@@ -63,6 +66,144 @@ class NormalizationModelTest {
     @Test
     void publicResultTypeGraphCannotRetainForbiddenSourceOrMutableTypes() {
         assertAllowedResultGraph(NormalizedThrowableGraph.class);
+    }
+
+    @Test
+    void acceptsAValidDirectlyConstructedGraphWithExactStatistics() {
+        var root = node(0, text("X"), Optional.empty(), List.of());
+        var statistics = new NormalizationStatistics(
+                1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 5);
+
+        var graph = new NormalizedThrowableGraph(
+                root, new NormalizationLimits(1, 1, 1, 1, 8), statistics);
+
+        assertEquals(root, graph.root());
+    }
+
+    @Test
+    void rejectsIncorrectStatisticsAndNonCanonicalOrDuplicateNodeIds() {
+        var valid = new ThrowableNormalizer().normalize(new Throwable("valid"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        valid.root(), valid.limits(), zeroStatistics()));
+
+        var wrongRootId = node(1, text("X"), Optional.empty(), List.of());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        wrongRootId,
+                        new NormalizationLimits(2, 2, 1, 1, 8),
+                        zeroStatistics()));
+
+        var duplicate = node(0, text("Y"), Optional.empty(), List.of());
+        var duplicateRoot = node(0, text("X"), Optional.of(duplicate), List.of());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        duplicateRoot,
+                        new NormalizationLimits(2, 2, 1, 1, 8),
+                        zeroStatistics()));
+    }
+
+    @Test
+    void rejectsUnresolvedReferencesAndMarkersOnWrongRelationships() {
+        var unresolved = node(
+                0,
+                text("X"),
+                Optional.of(ThrowableGraphMarker.reference(
+                        ThrowableGraphMarker.Kind.SHARED_REFERENCE, 99)),
+                List.of());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        unresolved,
+                        new NormalizationLimits(2, 2, 1, 1, 8),
+                        zeroStatistics()));
+
+        var malformedCause = node(
+                0,
+                text("X"),
+                Optional.of(ThrowableGraphMarker.malformedSuppressed()),
+                List.of());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        malformedCause,
+                        new NormalizationLimits(2, 2, 1, 1, 8),
+                        zeroStatistics()));
+    }
+
+    @Test
+    void rejectsDepthPerNodeAndGlobalTextLimitBypasses() {
+        var child = node(1, text("Y"), Optional.empty(), List.of());
+        var deep = node(0, text("X"), Optional.of(child), List.of());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        deep,
+                        new NormalizationLimits(2, 1, 1, 1, 8),
+                        zeroStatistics()));
+
+        var frames = List.<NormalizedFrameEntry>of(
+                new MalformedStackFrame(0, MalformedStackFrame.Reason.NULL_ELEMENT),
+                new MalformedStackFrame(1, MalformedStackFrame.Reason.NULL_ELEMENT));
+        var excessiveFrames = new NormalizedThrowable(
+                0,
+                text("X"),
+                NormalizedMessage.absent(),
+                NormalizedThrowable.StackTraceState.PRESENT,
+                frames,
+                0,
+                Optional.empty(),
+                Optional.empty(),
+                NormalizedThrowable.SuppressedState.EMPTY,
+                List.of(),
+                0,
+                Optional.empty());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        excessiveFrames,
+                        new NormalizationLimits(1, 1, 1, 1, 8),
+                        zeroStatistics()));
+
+        var excessiveText = node(0, text("XX"), Optional.empty(), List.of());
+        var textLimits =
+                new NormalizationLimits(1, 1, 1, 1, 8, 1, 1, 8, 32);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        excessiveText, textLimits, zeroStatistics()));
+    }
+
+    @Test
+    void rejectsMarkersThatDoNotOccurAtTheirDeclaredLimits() {
+        var earlyDepth = node(
+                0,
+                text("X"),
+                Optional.of(ThrowableGraphMarker.truncation(
+                        ThrowableGraphMarker.Kind.DEPTH_LIMIT)),
+                List.of());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        earlyDepth,
+                        new NormalizationLimits(4, 4, 1, 1, 8),
+                        zeroStatistics()));
+
+        var earlyNode = node(
+                0,
+                text("X"),
+                Optional.of(ThrowableGraphMarker.truncation(
+                        ThrowableGraphMarker.Kind.NODE_LIMIT)),
+                List.of());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NormalizedThrowableGraph(
+                        earlyNode,
+                        new NormalizationLimits(4, 4, 1, 1, 8),
+                        zeroStatistics()));
     }
 
     private static void assertAllowedResultGraph(Type rootType) {
@@ -152,6 +293,34 @@ class NormalizationModelTest {
     }
 
     private static NormalizedText text(String value) {
-        return new NormalizedText(new CandidateText(value), value.length(), 0, 0);
+        return new NormalizedText(
+                new CandidateText(value), value.length(), 0, 0, 0, java.util.Optional.empty());
+    }
+
+    private static NormalizedThrowable node(
+            int id,
+            NormalizedText className,
+            Optional<NormalizedThrowableElement> cause,
+            List<NormalizedThrowableElement> suppressed) {
+        return new NormalizedThrowable(
+                id,
+                className,
+                NormalizedMessage.absent(),
+                NormalizedThrowable.StackTraceState.EMPTY,
+                List.of(),
+                0,
+                Optional.empty(),
+                cause,
+                suppressed.isEmpty()
+                        ? NormalizedThrowable.SuppressedState.EMPTY
+                        : NormalizedThrowable.SuppressedState.PRESENT,
+                suppressed,
+                0,
+                Optional.empty());
+    }
+
+    private static NormalizationStatistics zeroStatistics() {
+        return new NormalizationStatistics(
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
 }

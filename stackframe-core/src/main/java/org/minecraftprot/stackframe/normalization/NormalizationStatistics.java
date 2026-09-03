@@ -12,8 +12,12 @@ public record NormalizationStatistics(
         long sharedReferences,
         long depthTruncations,
         long nodeLimitTruncations,
+        long scalarWorkTruncations,
         long unreadableValues,
-        long omittedTextUtf16Units) {
+        long omittedTextUtf16Units,
+        long retainedTextCodePoints,
+        long retainedTextUtf8Bytes,
+        long scalarWorkUnits) {
     public NormalizationStatistics {
         NormalizationValidation.nonNegative(retainedNodes, "retainedNodes");
         NormalizationValidation.nonNegative(retainedFrames, "retainedFrames");
@@ -25,8 +29,12 @@ public record NormalizationStatistics(
         NormalizationValidation.nonNegative(sharedReferences, "sharedReferences");
         NormalizationValidation.nonNegative(depthTruncations, "depthTruncations");
         NormalizationValidation.nonNegative(nodeLimitTruncations, "nodeLimitTruncations");
+        NormalizationValidation.nonNegative(scalarWorkTruncations, "scalarWorkTruncations");
         NormalizationValidation.nonNegative(unreadableValues, "unreadableValues");
         NormalizationValidation.nonNegative(
                 omittedTextUtf16Units, "omittedTextUtf16Units");
+        NormalizationValidation.nonNegative(retainedTextCodePoints, "retainedTextCodePoints");
+        NormalizationValidation.nonNegative(retainedTextUtf8Bytes, "retainedTextUtf8Bytes");
+        NormalizationValidation.nonNegative(scalarWorkUnits, "scalarWorkUnits");
     }
 }

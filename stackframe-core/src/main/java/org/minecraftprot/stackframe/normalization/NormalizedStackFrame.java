@@ -3,7 +3,13 @@ package org.minecraftprot.stackframe.normalization;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Scalar-only copy of one valid stack frame. */
+/**
+ * Scalar-only copy of one valid stack frame.
+ *
+ * <p>Throwable-provided frame strings are forgeable, so normalization assigns only
+ * {@link Category#UNKNOWN}. Later trusted platform metadata may categorize a frame
+ * outside this source-only contract.
+ */
 public record NormalizedStackFrame(
         int originalIndex,
         NormalizedText declaringClass,
@@ -16,7 +22,6 @@ public record NormalizedStackFrame(
         Category category)
         implements NormalizedFrameEntry {
     public enum Category {
-        JDK,
         UNKNOWN
     }
 

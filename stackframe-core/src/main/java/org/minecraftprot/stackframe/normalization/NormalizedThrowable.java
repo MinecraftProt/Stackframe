@@ -17,11 +17,19 @@ public record NormalizedThrowable(
         StackTraceState stackTraceState,
         List<NormalizedFrameEntry> stackFrames,
         long omittedFrameCount,
+        Optional<FrameTruncationReason> frameTruncationReason,
         Optional<NormalizedThrowableElement> cause,
         SuppressedState suppressedState,
         List<NormalizedThrowableElement> suppressed,
-        long omittedSuppressedCount)
+        long omittedSuppressedCount,
+        Optional<SuppressedTruncationReason> suppressedTruncationReason)
         implements NormalizedThrowableElement {
+    public enum FrameTruncationReason {
+        PER_THROWABLE_LIMIT,
+        TOTAL_FRAME_LIMIT,
+        SCALAR_WORK_LIMIT
+    }
+
     public enum StackTraceState {
         PRESENT,
         EMPTY,
@@ -36,6 +44,11 @@ public record NormalizedThrowable(
         UNREADABLE
     }
 
+    public enum SuppressedTruncationReason {
+        PER_THROWABLE_LIMIT,
+        SCALAR_WORK_LIMIT
+    }
+
     public NormalizedThrowable {
         NormalizationValidation.nonNegative(id, "id");
         Objects.requireNonNull(className, "className");
@@ -43,18 +56,30 @@ public record NormalizedThrowable(
         Objects.requireNonNull(stackTraceState, "stackTraceState");
         stackFrames = NormalizationValidation.immutableList(stackFrames, "stackFrames");
         NormalizationValidation.nonNegative(omittedFrameCount, "omittedFrameCount");
+        Objects.requireNonNull(frameTruncationReason, "frameTruncationReason");
         Objects.requireNonNull(cause, "cause");
         Objects.requireNonNull(suppressedState, "suppressedState");
         suppressed = NormalizationValidation.immutableList(suppressed, "suppressed");
         NormalizationValidation.nonNegative(omittedSuppressedCount, "omittedSuppressedCount");
+        Objects.requireNonNull(suppressedTruncationReason, "suppressedTruncationReason");
 
-        if ((stackTraceState == StackTraceState.PRESENT) != !stackFrames.isEmpty()) {
+        if ((stackTraceState == StackTraceState.PRESENT)
+                != (!stackFrames.isEmpty() || omittedFrameCount > 0)) {
             throw new IllegalArgumentException(
-                    "stackFrames must be non-empty exactly when stackTraceState is PRESENT");
+                    "present stack traces must retain or explicitly omit at least one frame");
         }
-        if ((suppressedState == SuppressedState.PRESENT) != !suppressed.isEmpty()) {
+        if ((omittedFrameCount > 0) != frameTruncationReason.isPresent()) {
             throw new IllegalArgumentException(
-                    "suppressed must be non-empty exactly when suppressedState is PRESENT");
+                    "frameTruncationReason is required exactly when frames were omitted");
+        }
+        if ((suppressedState == SuppressedState.PRESENT)
+                != (!suppressed.isEmpty() || omittedSuppressedCount > 0)) {
+            throw new IllegalArgumentException(
+                    "present suppressed arrays must retain or explicitly omit at least one child");
+        }
+        if ((omittedSuppressedCount > 0) != suppressedTruncationReason.isPresent()) {
+            throw new IllegalArgumentException(
+                    "suppressedTruncationReason is required exactly when children were omitted");
         }
     }
 }

@@ -12,6 +12,7 @@ public record ThrowableGraphMarker(
         SHARED_REFERENCE,
         DEPTH_LIMIT,
         NODE_LIMIT,
+        SCALAR_WORK_LIMIT,
         UNREADABLE_CAUSE,
         MALFORMED_SUPPRESSED
     }
@@ -22,7 +23,9 @@ public record ThrowableGraphMarker(
         NormalizationValidation.nonNegative(omittedDirectNodes, "omittedDirectNodes");
 
         var reference = kind == Kind.CYCLE_REFERENCE || kind == Kind.SHARED_REFERENCE;
-        var truncation = kind == Kind.DEPTH_LIMIT || kind == Kind.NODE_LIMIT;
+        var truncation = kind == Kind.DEPTH_LIMIT
+                || kind == Kind.NODE_LIMIT
+                || kind == Kind.SCALAR_WORK_LIMIT;
         if (reference != referencedNodeId.isPresent()) {
             throw new IllegalArgumentException(
                     "referencedNodeId is required exactly for reference markers");

@@ -18,6 +18,8 @@ import org.minecraftprot.stackframe.diagnostic.CandidateText;
  * on unsupported JDK internals.
  */
 public final class ThrowableNormalizer {
+    private static final int THROWABLE_ACCESSOR_WORK_UNITS = 4;
+
     private final NormalizationLimits limits;
 
     public ThrowableNormalizer() {
@@ -82,9 +84,17 @@ public final class ThrowableNormalizer {
             counters.nodeLimitTruncations = add(counters.nodeLimitTruncations, 1);
             return;
         }
+        if (counters.remainingScalarWork(limits) < THROWABLE_ACCESSOR_WORK_UNITS) {
+            visit.destination().element =
+                    ThrowableGraphMarker.truncation(ThrowableGraphMarker.Kind.SCALAR_WORK_LIMIT);
+            counters.scalarWorkTruncations = add(counters.scalarWorkTruncations, 1);
+            return;
+        }
 
         var node = new MutableNode(counters.retainedNodes);
         counters.retainedNodes = Math.incrementExact(counters.retainedNodes);
+        counters.scalarWorkUnits =
+                add(counters.scalarWorkUnits, THROWABLE_ACCESSOR_WORK_UNITS);
         visit.destination().child = node;
         seen.put(visit.source(), node);
 
@@ -114,7 +124,8 @@ public final class ThrowableNormalizer {
             if (cause != null) {
                 node.cause = new ElementSlot();
             }
-        } catch (RuntimeException exception) {
+        } catch (Throwable failure) {
+            rethrowIfFatal(failure);
             node.cause = new ElementSlot();
             node.cause.element = ThrowableGraphMarker.unreadableCause();
             counters.unreadableValues = add(counters.unreadableValues, 1);
@@ -129,9 +140,15 @@ public final class ThrowableNormalizer {
             } else if (suppressed.length == 0) {
                 node.suppressedState = NormalizedThrowable.SuppressedState.EMPTY;
             } else {
-                var retainedCount = Math.min(suppressed.length, limits.maxSuppressedPerThrowable());
-                var retained = new ArrayList<PendingChild>(retainedCount);
-                for (var index = 0; index < retainedCount; index++) {
+                var perThrowableCount =
+                        Math.min(suppressed.length, limits.maxSuppressedPerThrowable());
+                var retainedCapacity = (int) Math.min(
+                        perThrowableCount, counters.remainingScalarWork(limits));
+                var retained = new ArrayList<PendingChild>(retainedCapacity);
+                for (var index = 0;
+                        index < perThrowableCount && counters.remainingScalarWork(limits) > 0;
+                        index++) {
+                    counters.scalarWorkUnits = add(counters.scalarWorkUnits, 1);
                     var child = suppressed[index];
                     if (child == null) {
                         node.suppressed.add(ElementSlot.malformedSuppressed());
@@ -142,7 +159,16 @@ public final class ThrowableNormalizer {
                         node.suppressed.add(destination);
                     }
                 }
+                var retainedCount = node.suppressed.size();
                 node.omittedSuppressedCount = (long) suppressed.length - retainedCount;
+                if (node.omittedSuppressedCount > 0) {
+                    node.suppressedTruncationReason = Optional.of(
+                            retainedCount == limits.maxSuppressedPerThrowable()
+                                    ? NormalizedThrowable.SuppressedTruncationReason
+                                            .PER_THROWABLE_LIMIT
+                                    : NormalizedThrowable.SuppressedTruncationReason
+                                            .SCALAR_WORK_LIMIT);
+                }
                 counters.omittedSuppressedEdges =
                         add(counters.omittedSuppressedEdges, node.omittedSuppressedCount);
                 counters.retainedSuppressedEdges =
@@ -150,7 +176,8 @@ public final class ThrowableNormalizer {
                 node.suppressedState = NormalizedThrowable.SuppressedState.PRESENT;
                 retainedSuppressed = retained;
             }
-        } catch (RuntimeException exception) {
+        } catch (Throwable failure) {
+            rethrowIfFatal(failure);
             node.suppressedState = NormalizedThrowable.SuppressedState.UNREADABLE;
             counters.unreadableValues = add(counters.unreadableValues, 1);
         }
@@ -163,7 +190,8 @@ public final class ThrowableNormalizer {
             return message == null
                     ? NormalizedMessage.absent()
                     : NormalizedMessage.present(copyText(message, counters));
-        } catch (RuntimeException exception) {
+        } catch (Throwable failure) {
+            rethrowIfFatal(failure);
             counters.unreadableValues = add(counters.unreadableValues, 1);
             return NormalizedMessage.unreadable();
         }
@@ -173,7 +201,8 @@ public final class ThrowableNormalizer {
         final StackTraceElement[] frames;
         try {
             frames = source.getStackTrace();
-        } catch (RuntimeException exception) {
+        } catch (Throwable failure) {
+            rethrowIfFatal(failure);
             node.stackTraceState = NormalizedThrowable.StackTraceState.UNREADABLE;
             counters.unreadableValues = add(counters.unreadableValues, 1);
             return;
@@ -188,8 +217,13 @@ public final class ThrowableNormalizer {
             return;
         }
 
-        var retainedCount = Math.min(frames.length, limits.maxFramesPerThrowable());
-        for (var index = 0; index < retainedCount; index++) {
+        var perThrowableCount = Math.min(frames.length, limits.maxFramesPerThrowable());
+        for (var index = 0;
+                index < perThrowableCount
+                        && counters.retainedFrames < limits.maxTotalFrames()
+                        && counters.remainingScalarWork(limits) > 0;
+                index++) {
+            counters.scalarWorkUnits = add(counters.scalarWorkUnits, 1);
             var frame = copyFrame(frames[index], index, counters);
             node.stackFrames.add(frame);
             counters.retainedFrames = add(counters.retainedFrames, 1);
@@ -197,7 +231,16 @@ public final class ThrowableNormalizer {
                 counters.malformedFrames = add(counters.malformedFrames, 1);
             }
         }
+        var retainedCount = node.stackFrames.size();
         node.omittedFrameCount = (long) frames.length - retainedCount;
+        if (node.omittedFrameCount > 0) {
+            node.frameTruncationReason = Optional.of(
+                    retainedCount == limits.maxFramesPerThrowable()
+                            ? NormalizedThrowable.FrameTruncationReason.PER_THROWABLE_LIMIT
+                            : counters.retainedFrames >= limits.maxTotalFrames()
+                                    ? NormalizedThrowable.FrameTruncationReason.TOTAL_FRAME_LIMIT
+                                    : NormalizedThrowable.FrameTruncationReason.SCALAR_WORK_LIMIT);
+        }
         counters.omittedFrames = add(counters.omittedFrames, node.omittedFrameCount);
         node.stackTraceState = NormalizedThrowable.StackTraceState.PRESENT;
     }
@@ -229,8 +272,9 @@ public final class ThrowableNormalizer {
                     copyOptionalText(frame.getClassLoaderName(), counters),
                     copyOptionalText(moduleName, counters),
                     copyOptionalText(frame.getModuleVersion(), counters),
-                    category(declaringClass, moduleName));
-        } catch (RuntimeException exception) {
+                    category());
+        } catch (Throwable failure) {
+            rethrowIfFatal(failure);
             counters.unreadableValues = add(counters.unreadableValues, 1);
             return new MalformedStackFrame(originalIndex, MalformedStackFrame.Reason.UNREADABLE);
         }
@@ -245,22 +289,59 @@ public final class ThrowableNormalizer {
         var sourceIndex = 0;
         var retainedCodePoints = 0;
         var malformedUnits = 0;
-        while (sourceIndex < source.length() && retainedCodePoints < limits.maxTextCodePoints()) {
+        var extraInspectedUnits = 0;
+        NormalizedText.TruncationReason truncationReason = null;
+        while (sourceIndex < source.length()) {
+            if (retainedCodePoints >= limits.maxTextCodePoints()) {
+                truncationReason = NormalizedText.TruncationReason.PER_VALUE_CODE_POINT_LIMIT;
+                break;
+            }
+            if (counters.retainedTextCodePoints >= limits.maxTotalTextCodePoints()) {
+                truncationReason = NormalizedText.TruncationReason.TOTAL_CODE_POINT_LIMIT;
+                break;
+            }
+            if (counters.remainingTextUtf8Bytes(limits) < 4) {
+                truncationReason = NormalizedText.TruncationReason.TOTAL_UTF8_BYTE_LIMIT;
+                break;
+            }
+            var remainingSourceUnits = source.length() - sourceIndex;
+            var requiredWork = Math.min(remainingSourceUnits, 2);
+            if (counters.remainingScalarWork(limits) < requiredWork) {
+                truncationReason = NormalizedText.TruncationReason.SCALAR_WORK_LIMIT;
+                break;
+            }
+
             var first = source.charAt(sourceIndex);
+            int retainedUtf16Units;
+            int retainedCodePoint;
+            var extraInspectedWork = 0;
             if (Character.isHighSurrogate(first)
                     && sourceIndex + 1 < source.length()
                     && Character.isLowSurrogate(source.charAt(sourceIndex + 1))) {
                 retained.append(first).append(source.charAt(sourceIndex + 1));
-                sourceIndex += 2;
+                retainedUtf16Units = 2;
+                retainedCodePoint = Character.toCodePoint(first, source.charAt(sourceIndex + 1));
             } else if (Character.isSurrogate(first)) {
                 retained.append('\uFFFD');
-                sourceIndex++;
+                retainedUtf16Units = 1;
+                retainedCodePoint = 0xFFFD;
                 malformedUnits++;
+                if (Character.isHighSurrogate(first) && sourceIndex + 1 < source.length()) {
+                    extraInspectedUnits++;
+                    extraInspectedWork = 1;
+                }
             } else {
                 retained.append(first);
-                sourceIndex++;
+                retainedUtf16Units = 1;
+                retainedCodePoint = first;
             }
+            sourceIndex += retainedUtf16Units;
             retainedCodePoints++;
+            counters.retainedTextCodePoints = add(counters.retainedTextCodePoints, 1);
+            counters.retainedTextUtf8Bytes =
+                    add(counters.retainedTextUtf8Bytes, utf8Bytes(retainedCodePoint));
+            counters.scalarWorkUnits =
+                    add(counters.scalarWorkUnits, retainedUtf16Units + extraInspectedWork);
         }
         var omittedUnits = source.length() - sourceIndex;
         counters.omittedTextUtf16Units =
@@ -269,16 +350,12 @@ public final class ThrowableNormalizer {
                 new CandidateText(retained.toString()),
                 source.length(),
                 omittedUnits,
-                malformedUnits);
+                malformedUnits,
+                extraInspectedUnits,
+                Optional.ofNullable(truncationReason));
     }
 
-    private static NormalizedStackFrame.Category category(
-            String declaringClass, String moduleName) {
-        if (declaringClass.startsWith("java.")
-                || (moduleName != null
-                        && (moduleName.startsWith("java.") || moduleName.startsWith("jdk.")))) {
-            return NormalizedStackFrame.Category.JDK;
-        }
+    private static NormalizedStackFrame.Category category() {
         return NormalizedStackFrame.Category.UNKNOWN;
     }
 
@@ -293,15 +370,45 @@ public final class ThrowableNormalizer {
                 node.stackTraceState,
                 node.stackFrames,
                 node.omittedFrameCount,
+                node.frameTruncationReason,
                 node.cause == null ? Optional.empty() : Optional.of(node.cause.resolve()),
                 node.suppressedState,
                 suppressed,
-                node.omittedSuppressedCount);
+                node.omittedSuppressedCount,
+                node.suppressedTruncationReason);
         node.active = false;
     }
 
     private static long add(long left, long right) {
         return Math.addExact(left, right);
+    }
+
+    private static int utf8Bytes(int codePoint) {
+        if (codePoint <= 0x7F) {
+            return 1;
+        }
+        if (codePoint <= 0x7FF) {
+            return 2;
+        }
+        if (codePoint <= 0xFFFF) {
+            return 3;
+        }
+        return 4;
+    }
+
+    /**
+     * Only VM resource/integrity failures and asynchronous thread termination are
+     * allowed to escape. AssertionError, LinkageError, and other accessor failures
+     * are untrusted input failures and become unreadable markers.
+     */
+    @SuppressWarnings("removal")
+    private static void rethrowIfFatal(Throwable failure) {
+        if (failure instanceof VirtualMachineError virtualMachineError) {
+            throw virtualMachineError;
+        }
+        if (failure instanceof ThreadDeath threadDeath) {
+            throw threadDeath;
+        }
     }
 
     private interface Task {
@@ -343,10 +450,14 @@ public final class ThrowableNormalizer {
         private NormalizedThrowable.StackTraceState stackTraceState;
         private final List<NormalizedFrameEntry> stackFrames = new ArrayList<>();
         private long omittedFrameCount;
+        private Optional<NormalizedThrowable.FrameTruncationReason> frameTruncationReason =
+                Optional.empty();
         private ElementSlot cause;
         private NormalizedThrowable.SuppressedState suppressedState;
         private final List<ElementSlot> suppressed = new ArrayList<>();
         private long omittedSuppressedCount;
+        private Optional<NormalizedThrowable.SuppressedTruncationReason>
+                suppressedTruncationReason = Optional.empty();
         private NormalizedThrowable result;
 
         private MutableNode(int id) {
@@ -365,8 +476,20 @@ public final class ThrowableNormalizer {
         private long sharedReferences;
         private long depthTruncations;
         private long nodeLimitTruncations;
+        private long scalarWorkTruncations;
         private long unreadableValues;
         private long omittedTextUtf16Units;
+        private long retainedTextCodePoints;
+        private long retainedTextUtf8Bytes;
+        private long scalarWorkUnits;
+
+        long remainingScalarWork(NormalizationLimits limits) {
+            return (long) limits.maxScalarWorkUnits() - scalarWorkUnits;
+        }
+
+        long remainingTextUtf8Bytes(NormalizationLimits limits) {
+            return (long) limits.maxTotalTextUtf8Bytes() - retainedTextUtf8Bytes;
+        }
 
         NormalizationStatistics statistics() {
             return new NormalizationStatistics(
@@ -380,8 +503,12 @@ public final class ThrowableNormalizer {
                     sharedReferences,
                     depthTruncations,
                     nodeLimitTruncations,
+                    scalarWorkTruncations,
                     unreadableValues,
-                    omittedTextUtf16Units);
+                    omittedTextUtf16Units,
+                    retainedTextCodePoints,
+                    retainedTextUtf8Bytes,
+                    scalarWorkUnits);
         }
     }
 }
