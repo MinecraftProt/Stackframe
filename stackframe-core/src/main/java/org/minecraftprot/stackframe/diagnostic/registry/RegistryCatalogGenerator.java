@@ -84,13 +84,15 @@ public final class RegistryCatalogGenerator {
 
                 ### Arbitration reason codes
 
-                | Reason code | Meaning |
-                | --- | --- |
+                | Reason code | Applies to | Meaning |
+                | --- | --- | --- |
                 """);
         Arrays.stream(ArbitrationReasonCode.values())
                 .sorted(Comparator.comparing(ArbitrationReasonCode::key))
                 .forEach(reason -> output.append("| `")
                         .append(reason.key())
+                        .append("` | `")
+                        .append(reason.scope())
                         .append("` | ")
                         .append(reason.meaning())
                         .append(" |\n"));

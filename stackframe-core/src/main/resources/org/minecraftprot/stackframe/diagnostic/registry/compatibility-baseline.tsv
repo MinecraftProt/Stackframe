@@ -17,20 +17,24 @@ combinationPolicy	meaning
 COMPATIBLE_FACTS	Candidates may merge only when identity and required facts agree under ADR 004.
 NEVER	Candidates remain separate and cannot be merged.
 [arbitrationReasons]
-reasonCode	meaning
-classifier-failure	A classifier failed or returned malformed output and was isolated.
-fallback-conflict	Equal-ranked candidates disagreed in meaning or could not combine.
-fallback-internal-failure	An internal arbitration invariant failed and safe generic output was selected.
-fallback-limit	A deterministic processing limit prevented complete arbitration.
-fallback-no-eligible	No eligible specialized candidate remained.
-merged-compatible	Compatible candidates with the same identity were merged.
-rejected-duplicate-classifier-key	Every classifier sharing a duplicate key was disabled for the event.
-rejected-invalid-reference	A candidate referenced an absent failure unit or evidence item.
-rejected-malformed	A candidate violated its structural contract.
-rejected-unknown-diagnostic	A candidate referenced an unregistered or inactive diagnostic identity.
-rejected-unsupported-claim	Required evidence did not support a candidate claim.
-selected	Candidate was the unique highest eligible semantic result.
-suppressed-lower-rank	An eligible candidate ranked below the selected result.
+reasonCode	scope	meaning
+classifier-failure	CLASSIFIER	A classifier failed or returned malformed output and was isolated.
+excluded-conflict	NON_SELECTED_CANDIDATE	An equal-ranked candidate participated in an unresolved semantic conflict.
+excluded-internal-failure	NON_SELECTED_CANDIDATE	An internal arbitration invariant prevented the candidate from being selected.
+excluded-limit	NON_SELECTED_CANDIDATE	A deterministic processing limit prevented the candidate from being selected.
+excluded-low-confidence	NON_SELECTED_CANDIDATE	A valid candidate's effective confidence was below specialized eligibility.
+fallback-conflict	FALLBACK_SELECTION	Equal-ranked candidates disagreed in meaning or could not combine.
+fallback-internal-failure	FALLBACK_SELECTION	An internal arbitration invariant failed and safe generic output was selected.
+fallback-limit	FALLBACK_SELECTION	A deterministic processing limit prevented complete arbitration.
+fallback-no-eligible	FALLBACK_SELECTION	No eligible specialized candidate remained.
+merged-compatible	NON_SELECTED_CANDIDATE	Compatible candidates with the same identity were merged.
+rejected-duplicate-classifier-key	CLASSIFIER	Every classifier sharing a duplicate key was disabled for the event.
+rejected-invalid-reference	NON_SELECTED_CANDIDATE	A candidate referenced an absent failure unit or evidence item.
+rejected-malformed	NON_SELECTED_CANDIDATE	A candidate violated its structural contract.
+rejected-unknown-diagnostic	NON_SELECTED_CANDIDATE	A candidate referenced an unregistered or inactive diagnostic identity.
+rejected-unsupported-claim	NON_SELECTED_CANDIDATE	Required evidence did not support a candidate claim.
+selected	SELECTED_CANDIDATE	Candidate was the unique highest eligible semantic result.
+suppressed-lower-rank	NON_SELECTED_CANDIDATE	An eligible candidate ranked below the selected result.
 [remediationActions]
 action	safety	requiresRemedyEvidence	requiresConfirmation	requiresBackup	meaning
 CREATE_SANITIZED_SUPPORT_BUNDLE	INSPECT_ONLY	false	false	false	Create a sanitized local support bundle.

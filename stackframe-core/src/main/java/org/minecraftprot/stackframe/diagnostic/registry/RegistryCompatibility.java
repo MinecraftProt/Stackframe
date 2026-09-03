@@ -66,7 +66,11 @@ public final class RegistryCompatibility {
                 .collect(Collectors.joining("\n"));
         var arbitrationReasons = Arrays.stream(ArbitrationReasonCode.values())
                 .sorted(Comparator.comparing(ArbitrationReasonCode::key))
-                .map(reason -> reason.key() + "\t" + reason.meaning())
+                .map(reason -> String.join(
+                        "\t",
+                        reason.key(),
+                        reason.scope().name(),
+                        reason.meaning()))
                 .collect(Collectors.joining("\n"));
         var remediationActions = Arrays.stream(RemediationAction.values())
                 .sorted(Comparator.comparing(Enum::name))
@@ -87,7 +91,7 @@ public final class RegistryCompatibility {
                 .append("combinationPolicy\tmeaning\n")
                 .append(combinationPolicies)
                 .append("\n[arbitrationReasons]\n")
-                .append("reasonCode\tmeaning\n")
+                .append("reasonCode\tscope\tmeaning\n")
                 .append(arbitrationReasons)
                 .append("\n[remediationActions]\n")
                 .append("action\tsafety\trequiresRemedyEvidence\trequiresConfirmation")

@@ -43,8 +43,11 @@ or disguise a different safety level.
 
 Classifier registrations separately govern stable classifier keys, diagnostic
 identity, reviewed precedence from `-100` through `100`, and combination policy.
-The registry defines stable machine-readable arbitration reason codes, but does
-not execute arbitration; ADR 004 remains the selection contract.
+The registry defines stable machine-readable arbitration reason codes and whether
+each applies to a selected candidate, non-selected candidate, fallback selection,
+or classifier. Low-confidence exclusion and generic fallback therefore remain
+distinct truthful outcomes. The registry does not execute arbitration; ADR 004
+remains the selection contract.
 
 ## Intentional compatibility migrations
 
