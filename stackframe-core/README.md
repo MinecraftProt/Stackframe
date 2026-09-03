@@ -36,6 +36,52 @@ without accepting protected originals. Redaction policy, throwable
 normalization, arbitration, trace storage, diagnostic-code allocation, and
 rendering remain separate provider contracts.
 
+## Diagnostic-code registry
+
+Package `org.minecraftprot.stackframe.diagnostic.registry` owns accepted
+`SF0xxx`-`SF5xxx` ranges, immutable allocation snapshots, evidence and fallback
+requirements, typed remediation ceilings, governed classifier metadata and
+arbitration reason codes, and the active `SF0001` generic fallback.
+The canonical declaration, generated searchable catalog, compatibility baseline,
+and intentional migration process are documented in
+[`docs/diagnostic-registry/`](../docs/diagnostic-registry/README.md).
+
+## Throwable normalization
+
+Package `org.minecraftprot.stackframe.normalization` iteratively copies throwable
+cause/suppressed graphs without retaining source objects. Identity-based traversal
+uses stable cause-first, then suppressed-order node IDs and distinguishes cycles,
+shared references, depth limits, node limits, frame limits, suppressed-child
+limits, scalar-work exhaustion, malformed frame data, and unreadable accessors.
+
+Reviewed defaults cap one pass at 256 nodes, 64 levels, 256 frames per throwable,
+64 suppressed children per throwable, 4,096 candidate-text code points per scalar,
+4,096 frames overall, 65,536 candidate-text code points overall, 262,144 retained
+UTF-8 bytes, and 262,144 scalar-work units. Limits are configurable positive
+values; text cannot exceed the diagnostic candidate boundary. Every truncation
+records its stopping budget and exact omitted UTF-16/frame/edge count. Counters fail
+on arithmetic overflow rather than wrapping.
+After JDK throwable accessors return, traversal, scalar inspection, and retained
+output obey these fixed bounds. The public JDK API itself materializes complete
+defensive stack-frame and suppressed arrays before exposing their lengths, so that
+accessor allocation cannot be preempted without unsupported JDK internals.
+
+Throwable-provided frame class and module strings are forgeable and therefore
+always categorize as `UNKNOWN`; trusted platform metadata must establish any later
+provenance. Accessor failures including `AssertionError` and `LinkageError` become
+explicit unreadable values. Only `VirtualMachineError` and `ThreadDeath` escape
+normalization.
+
+Every public `NormalizedThrowableGraph` construction runs an iterative validation
+pass over canonical IDs, references, marker placement, identity, depth, per-node
+and global limits, and exact statistics. Public construction cannot bypass the
+normalizer's bounded graph contract.
+
+Normalized graphs are short-lived pre-redaction values. Their candidate text may
+contain sensitive data or controls: never render or persist these graphs directly,
+complete redaction/debug-record policy promptly, and release the normalized graph.
+Only copied scalar data and immutable lists leave the normalizer.
+
 ## Worker notes
 
 - Coordinate public model changes before implementation.
