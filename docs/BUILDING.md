@@ -81,8 +81,8 @@ claims require the release evidence defined in
 | Module | Production dependencies |
 | --- | --- |
 | `stackframe-core` | JDK only |
-| `stackframe-renderer` | `stackframe-core` |
-| `stackframe-fabric` | core, renderer, Minecraft, and Fabric Loader |
+| `stackframe-renderer` | `stackframe-core` and ICU4J 78.3 |
+| `stackframe-fabric` | core, renderer, ICU4J runtime, Minecraft, and Fabric Loader |
 | `stackframe-testkit` | none in the initial scaffold |
 
 Production modules cannot depend on testkit. Forge and client modules are not
@@ -93,3 +93,19 @@ The development Fabric server artifact is:
 ```text
 stackframe-fabric/build/libs/stackframe-fabric-0.1.0-SNAPSHOT.jar
 ```
+
+The Fabric artifact bundles ICU4J 78.3 for the renderer. ICU remains licensed
+under `Unicode-3.0`; Stackframe does not relicense it under Apache-2.0. The
+authoritative ICU 78 license and included third-party notices are committed at
+[`THIRD-PARTY-NOTICES/icu4j-78.3-LICENSE.txt`](../THIRD-PARTY-NOTICES/icu4j-78.3-LICENSE.txt)
+from the URL declared by the ICU4J 78.3 POM:
+<https://raw.githubusercontent.com/unicode-org/icu/maint/maint-78/LICENSE>.
+The same bytes are packaged as
+`META-INF/licenses/icu4j-78.3-LICENSE.txt`, separately from
+`LICENSE_stackframe`.
+
+Loom wraps the non-mod ICU JAR with generated `fabric.mod.json` metadata and
+warns that upstream version `78.3` is not strict semantic-version syntax.
+Stackframe keeps the actual Maven pin unchanged. The Fabric artifact test opens
+the final JAR, verifies both licenses and all nested modules, checks server-only
+metadata, and proves Fabric Loader accepts the generated version string.

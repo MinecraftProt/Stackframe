@@ -1,0 +1,8 @@
+error[SF3004]: mod dependency is missing
+location: mods/example-addon.jar
+cause: example-core version 3.0.0 is not installed
+evidence: validated dependency metadata
+help: install a compatible example-core release, then restart the server
+trace:
+  31 frames collapsed; complete details preserved as diagnostic record02;
+  diagnostic diag0002; correlation DEF456

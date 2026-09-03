@@ -1,0 +1,7 @@
+error[SF2003]: multiline value is invalid
+location: data/example.json
+context line 20: "first": value,
+context line 21: "second": value
+annotation lines 20:3-21:5 primary: value spans two lines
+evidence: validated multiline source
+trace: no originating trace; diagnostic diag0001; correlation ABC123

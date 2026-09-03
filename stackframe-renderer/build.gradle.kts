@@ -6,4 +6,7 @@ description = "Stackframe terminal, plain-text, and structured diagnostic render
 
 dependencies {
     api(project(":stackframe-core"))
+    implementation(libs.icu4j)
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
