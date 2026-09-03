@@ -11,7 +11,7 @@ import java.util.Set;
 final class DocumentValidator {
     private final IdentityHashMap<Diagnostic, String> diagnosticIdentities = new IdentityHashMap<>();
     private final Map<String, RepeatedField> repeatedFields = new LinkedHashMap<>();
-    private final Map<String, String> scalarOmissionTargets = new LinkedHashMap<>();
+    private final Map<String, ScalarTarget> scalarOmissionTargets = new LinkedHashMap<>();
     private final List<OmissionAtPath> omissionRecords = new ArrayList<>();
     private final Map<RedactionKey, Integer> transformedValues = new LinkedHashMap<>();
     private final Map<RedactionKey, Integer> redactionNotices = new LinkedHashMap<>();
@@ -43,12 +43,6 @@ final class DocumentValidator {
         validator.diagnostic(root, "$.root", 1);
         validator.validateOmissions();
         validator.validateRedactionNotices();
-        if (validator.stringBytes > ModelLimits.DOCUMENT_UTF8_BYTES) {
-            throw new LimitValidationException(
-                    "$",
-                    "string data uses " + validator.stringBytes + " UTF-8 bytes; maximum is "
-                            + ModelLimits.DOCUMENT_UTF8_BYTES);
-        }
     }
 
     private void diagnostic(Diagnostic diagnostic, String path, int depth) {
@@ -119,8 +113,10 @@ final class DocumentValidator {
         string(location.kind().name());
         display(location.display(), path + ".display", omissionScope);
         location.position().ifPresent(this::range);
-        scalarOmissionTarget(path + ".position", omissionScope);
-        scalarOmissionTarget(path + ".excerpt", omissionScope);
+        optionalAtomicTarget(
+                path + ".position", omissionScope, location.position().isPresent());
+        optionalAtomicTarget(
+                path + ".excerpt", omissionScope, location.excerpt().isPresent());
         location.excerpt().ifPresent(excerpt -> excerpt(
                 excerpt, path + ".excerpt", omissionScope));
         bounded(path + ".evidenceIds", location.evidenceIds(), omissionScope);
@@ -165,15 +161,20 @@ final class DocumentValidator {
         string(evidence.id().value());
         string(evidence.kind().name());
         display(evidence.summary(), path + ".summary", omissionScope);
-        scalarOmissionTarget(path + ".source", omissionScope);
+        if (evidence.source().isEmpty()) {
+            optionalAtomicTarget(path + ".source", omissionScope, false);
+        }
         evidence.source().ifPresent(value -> display(
                 value, path + ".source", omissionScope));
     }
 
     private void confidence(ConfidenceReference confidence, String path, String omissionScope) {
-        scalarOmissionTarget(path + ".assessmentId", omissionScope);
-        scalarOmissionTarget(path + ".classifierId", omissionScope);
-        scalarOmissionTarget(path + ".policyId", omissionScope);
+        optionalAtomicTarget(
+                path + ".assessmentId", omissionScope, confidence.assessmentId().isPresent());
+        optionalAtomicTarget(
+                path + ".classifierId", omissionScope, confidence.classifierId().isPresent());
+        optionalAtomicTarget(
+                path + ".policyId", omissionScope, confidence.policyId().isPresent());
         confidence.assessmentId().ifPresent(id -> string(id.value()));
         confidence.classifierId().ifPresent(id -> string(id.value()));
         bounded(path + ".evidenceIds", confidence.evidenceIds(), omissionScope);
@@ -183,8 +184,11 @@ final class DocumentValidator {
 
     private void trace(TraceSummary trace, String path, String omissionScope) {
         string(trace.state().name());
-        scalarOmissionTarget(path + ".destination", omissionScope);
-        scalarOmissionTarget(path + ".recordId", omissionScope);
+        if (trace.destination().isEmpty()) {
+            optionalAtomicTarget(path + ".destination", omissionScope, false);
+        }
+        optionalAtomicTarget(
+                path + ".recordId", omissionScope, trace.recordId().isPresent());
         trace.destination().ifPresent(value -> display(
                 value, path + ".destination", omissionScope));
         trace.recordId().ifPresent(id -> {
@@ -216,13 +220,13 @@ final class DocumentValidator {
     }
 
     private void catalog(CatalogText text, String path, String omissionScope) {
-        scalarOmissionTarget(path, omissionScope);
+        textTarget(path, omissionScope);
         string(text.key());
         string(text.value());
     }
 
     private void display(DisplayText text, String path, String omissionScope) {
-        scalarOmissionTarget(path, omissionScope);
+        textTarget(path, omissionScope);
         string(text.value());
         string(text.origin().name());
         string(text.sensitivity().name());
@@ -251,8 +255,14 @@ final class DocumentValidator {
         }
     }
 
-    private void scalarOmissionTarget(String path, String omissionScope) {
-        scalarOmissionTargets.put(path, omissionScope);
+    private void textTarget(String path, String omissionScope) {
+        scalarOmissionTargets.put(
+                path, new ScalarTarget(ScalarTargetKind.TEXT, omissionScope, true));
+    }
+
+    private void optionalAtomicTarget(String path, String omissionScope, boolean present) {
+        scalarOmissionTargets.put(
+                path, new ScalarTarget(ScalarTargetKind.OPTIONAL_ATOMIC, omissionScope, present));
     }
 
     private void validateOmissions() {
@@ -261,24 +271,16 @@ final class DocumentValidator {
             var target = atPath.omission().affectedPath().value();
             var repeatedField = repeatedFields.get(target);
             if (repeatedField == null) {
-                var scalarScope = scalarOmissionTargets.get(target);
-                if (scalarScope == null) {
+                var scalarTarget = scalarOmissionTargets.get(target);
+                if (scalarTarget == null) {
                     throw new OmissionValidationException(
                             atPath.recordPath(), "affected path is not an omittable model field");
                 }
-                if (!scalarScope.equals(atPath.omissionScope())) {
+                if (!scalarTarget.omissionScope().equals(atPath.omissionScope())) {
                     throw new OmissionValidationException(
                             atPath.recordPath(), "affected field is outside this omission scope");
                 }
-                if (!Set.of(
-                                OmissionReason.TEXT_LIMIT,
-                                OmissionReason.BYTE_BUDGET,
-                                OmissionReason.REDACTION_POLICY)
-                        .contains(atPath.omission().reason())) {
-                    throw new OmissionValidationException(
-                            atPath.recordPath(),
-                            "scalar omission requires TEXT_LIMIT, BYTE_BUDGET, or REDACTION_POLICY");
-                }
+                validateScalarOmission(atPath, scalarTarget);
                 if (matched.put(target, atPath.omission().omittedCount()) != null) {
                     throw new OmissionValidationException(
                             atPath.recordPath(), "more than one omission records the same affected field");
@@ -313,6 +315,36 @@ final class DocumentValidator {
         });
     }
 
+    private static void validateScalarOmission(
+            OmissionAtPath atPath, ScalarTarget scalarTarget) {
+        var omission = atPath.omission();
+        if (scalarTarget.kind() == ScalarTargetKind.TEXT) {
+            if (!Set.of(OmissionReason.TEXT_LIMIT, OmissionReason.BYTE_BUDGET)
+                    .contains(omission.reason())) {
+                throw new OmissionValidationException(
+                        atPath.recordPath(),
+                        "text truncation requires TEXT_LIMIT or BYTE_BUDGET");
+            }
+            return;
+        }
+        if (scalarTarget.present()) {
+            throw new OmissionValidationException(
+                    atPath.recordPath(),
+                    "an atomic optional field must be absent when claimed as omitted");
+        }
+        if (omission.omittedCount() != 1) {
+            throw new OmissionValidationException(
+                    atPath.recordPath(),
+                    "an omitted atomic optional field must have omittedCount 1");
+        }
+        if (!Set.of(OmissionReason.BYTE_BUDGET, OmissionReason.REDACTION_POLICY)
+                .contains(omission.reason())) {
+            throw new OmissionValidationException(
+                    atPath.recordPath(),
+                    "an atomic optional omission requires BYTE_BUDGET or REDACTION_POLICY");
+        }
+    }
+
     private void validateRedactionNotices() {
         transformedValues.forEach((key, observedCount) -> {
             var noticeCount = redactionNotices.getOrDefault(key, 0);
@@ -336,10 +368,26 @@ final class DocumentValidator {
     }
 
     private void string(String value) {
-        stringBytes += value.getBytes(StandardCharsets.UTF_8).length;
+        var encodedBytes = value.getBytes(StandardCharsets.UTF_8).length;
+        if (encodedBytes > ModelLimits.DOCUMENT_UTF8_BYTES - stringBytes) {
+            throw new LimitValidationException(
+                    "$",
+                    "string data exceeds the " + ModelLimits.DOCUMENT_UTF8_BYTES
+                            + "-byte UTF-8 budget");
+        }
+        stringBytes += encodedBytes;
     }
 
     private record RepeatedField(int omittedCount, String omissionScope) {
+    }
+
+    private enum ScalarTargetKind {
+        TEXT,
+        OPTIONAL_ATOMIC
+    }
+
+    private record ScalarTarget(
+            ScalarTargetKind kind, String omissionScope, boolean present) {
     }
 
     private record RedactionKey(

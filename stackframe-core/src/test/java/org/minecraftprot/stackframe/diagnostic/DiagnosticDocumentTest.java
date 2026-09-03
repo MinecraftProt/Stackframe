@@ -12,9 +12,13 @@ import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 class DiagnosticDocumentTest {
@@ -90,15 +94,27 @@ class DiagnosticDocumentTest {
 
     @Test
     void completedGraphTypesExcludeCandidateAndPlatformObjects() {
-        var forbidden = Set.of(
-                CandidateText.class,
-                Throwable.class,
-                ClassLoader.class,
-                Path.class,
-                Object.class);
+        assertCompletedGraphTypes(DiagnosticDocument.class);
+    }
+
+    @Test
+    void typeGraphCheckRejectsForbiddenTypesHiddenBehindContainers() {
+        assertThrows(AssertionError.class, () -> assertCompletedGraphTypes(
+                PlatformRetentionFixture.class));
+        assertThrows(AssertionError.class, () -> assertCompletedGraphTypes(
+                ArrayRetentionFixture.class));
+        assertThrows(AssertionError.class, () -> assertCompletedGraphTypes(
+                CallbackRetentionFixture.class));
+        assertThrows(AssertionError.class, () -> assertCompletedGraphTypes(
+                MutableRetentionFixture.class));
+        assertThrows(AssertionError.class, () -> assertCompletedGraphTypes(
+                CandidateRetentionFixture.class));
+    }
+
+    private static void assertCompletedGraphTypes(Type rootType) {
         var visited = new HashSet<Type>();
         var pending = new ArrayDeque<Type>();
-        pending.add(DiagnosticDocument.class);
+        pending.add(rootType);
 
         while (!pending.isEmpty()) {
             var type = pending.removeFirst();
@@ -112,12 +128,18 @@ class DiagnosticDocumentTest {
                 }
                 continue;
             }
-            if (!(type instanceof Class<?> modelType)
-                    || modelType.isEnum()
-                    || modelType.getPackageName().startsWith("java.")) {
+            if (!(type instanceof Class<?> modelType)) {
                 continue;
             }
-            assertFalse(forbidden.contains(modelType), () -> "completed graph retains " + modelType);
+            assertAllowedJavaType(modelType);
+            if (modelType.isEnum()
+                    || modelType.isPrimitive()
+                    || modelType == String.class
+                    || modelType == Integer.class
+                    || modelType == List.class
+                    || modelType == Optional.class) {
+                continue;
+            }
             assertTrue(modelType.isRecord() || Modifier.isFinal(modelType.getModifiers()));
             if (modelType.isRecord()) {
                 for (var component : modelType.getRecordComponents()) {
@@ -131,6 +153,51 @@ class DiagnosticDocumentTest {
                 }
             }
         }
+    }
+
+    private static void assertAllowedJavaType(Class<?> type) {
+        assertFalse(type.isArray(), () -> "completed graph retains array type " + type);
+        assertFalse(type == CandidateText.class, "completed graph retains pre-redaction CandidateText");
+        assertFalse(type == Object.class, "completed graph retains untyped Object");
+        assertFalse(Throwable.class.isAssignableFrom(type),
+                () -> "completed graph retains throwable type " + type);
+        assertFalse(ClassLoader.class.isAssignableFrom(type),
+                () -> "completed graph retains class-loader type " + type);
+        assertFalse(Path.class.isAssignableFrom(type),
+                () -> "completed graph retains path type " + type);
+        assertFalse(
+                type == Runnable.class
+                        || Callable.class.isAssignableFrom(type)
+                        || Supplier.class.isAssignableFrom(type)
+                        || type.getPackageName().equals("java.util.function"),
+                () -> "completed graph retains callback type " + type);
+        assertFalse(
+                Collection.class.isAssignableFrom(type) && type != List.class,
+                () -> "completed graph retains unsupported mutable collection type " + type);
+        if (type.getPackageName().startsWith("java.")) {
+            assertTrue(
+                    type.isPrimitive()
+                            || type == String.class
+                            || type == Integer.class
+                            || type == List.class
+                            || type == Optional.class,
+                    () -> "completed graph retains unsupported Java type " + type);
+        }
+    }
+
+    private record PlatformRetentionFixture(Optional<Path> path, Object platform) {
+    }
+
+    private record ArrayRetentionFixture(String[] values) {
+    }
+
+    private record CallbackRetentionFixture(Supplier<String> callback) {
+    }
+
+    private record MutableRetentionFixture(Set<String> values) {
+    }
+
+    private record CandidateRetentionFixture(Optional<CandidateText> candidate) {
     }
 
     @Test

@@ -329,6 +329,94 @@ class LimitsRelationsAndOmissionsTest {
     }
 
     @Test
+    void atomicOptionalOmissionsRequireAbsenceExactCountAndApplicableReason() {
+        var position = new SourceRange(
+                new SourcePosition(1, 1), new SourcePosition(1, 2));
+        var locationWithPosition = new Location(
+                new LocationId("location"),
+                LocationKind.SOURCE,
+                ModelFixtures.text("source location"),
+                Optional.of(position),
+                Optional.empty(),
+                BoundedList.empty());
+        var presentPositionRoot = ModelFixtures.diagnostic(
+                Severity.ERROR,
+                BoundedList.of(List.of(locationWithPosition)),
+                BoundedList.empty(),
+                BoundedList.empty(),
+                TraceSummary.notApplicable(),
+                BoundedList.empty(),
+                ConfidenceReference.unassessed(),
+                BoundedList.empty(),
+                BoundedList.of(List.of(new Omission(
+                        new ModelPath("$.root.locations.items[0].position"),
+                        1,
+                        OmissionReason.REDACTION_POLICY))));
+
+        assertThrows(
+                OmissionValidationException.class,
+                () -> ModelFixtures.document(presentPositionRoot));
+
+        var locationWithoutPosition = new Location(
+                new LocationId("location"),
+                LocationKind.SOURCE,
+                ModelFixtures.text("source location"),
+                Optional.empty(),
+                Optional.empty(),
+                BoundedList.empty());
+        var extremeCountRoot = ModelFixtures.diagnostic(
+                Severity.ERROR,
+                BoundedList.of(List.of(locationWithoutPosition)),
+                BoundedList.empty(),
+                BoundedList.empty(),
+                TraceSummary.notApplicable(),
+                BoundedList.empty(),
+                ConfidenceReference.unassessed(),
+                BoundedList.empty(),
+                BoundedList.of(List.of(new Omission(
+                        new ModelPath("$.root.locations.items[0].position"),
+                        Integer.MAX_VALUE,
+                        OmissionReason.REDACTION_POLICY))));
+
+        assertThrows(
+                OmissionValidationException.class,
+                () -> ModelFixtures.document(extremeCountRoot));
+    }
+
+    @Test
+    void textOmissionsRequireTextOrByteLimitsButMayCountMultipleCodePoints() {
+        var root = ModelFixtures.diagnostic(
+                Severity.ERROR,
+                BoundedList.empty(),
+                BoundedList.empty(),
+                BoundedList.empty(),
+                TraceSummary.notApplicable(),
+                BoundedList.empty(),
+                ConfidenceReference.unassessed(),
+                BoundedList.empty(),
+                BoundedList.of(List.of(new Omission(
+                        new ModelPath("$.root.title"),
+                        Integer.MAX_VALUE,
+                        OmissionReason.TEXT_LIMIT))));
+
+        assertDoesNotThrow(() -> ModelFixtures.document(root));
+        assertThrows(OmissionValidationException.class, () -> ModelFixtures.document(
+                ModelFixtures.diagnostic(
+                        Severity.ERROR,
+                        BoundedList.empty(),
+                        BoundedList.empty(),
+                        BoundedList.empty(),
+                        TraceSummary.notApplicable(),
+                        BoundedList.empty(),
+                        ConfidenceReference.unassessed(),
+                        BoundedList.empty(),
+                        BoundedList.of(List.of(new Omission(
+                                new ModelPath("$.root.title"),
+                                1,
+                                OmissionReason.REDACTION_POLICY))))));
+    }
+
+    @Test
     void acceptsExactUtf8BudgetAndRejectsOneAdditionalByte() {
         var fixedStrings = new ArrayList<String>();
         fixedStrings.addAll(List.of(
@@ -390,6 +478,41 @@ class LimitsRelationsAndOmissionsTest {
         values.set(values.size() - 1, "x".repeat(finalBytes + 1));
         assertThrows(LimitValidationException.class,
                 () -> ModelFixtures.document(budgetDocument(ids, values)));
+    }
+
+    @Test
+    void utf8BudgetStopsBeforeTraversingAReusedOversizedNodeAgain() {
+        var evidence = IntStream.range(0, ModelLimits.EVIDENCE_PER_NODE)
+                .mapToObj(index -> new EvidenceReference(
+                        new EvidenceId("z" + index),
+                        EvidenceKind.OTHER,
+                        ModelFixtures.text("x".repeat(ModelLimits.TEXT_CODE_POINTS)),
+                        Optional.empty()))
+                .toList();
+        var oversized = ModelFixtures.diagnostic(
+                Severity.NOTE,
+                BoundedList.empty(),
+                BoundedList.empty(),
+                BoundedList.empty(),
+                TraceSummary.notApplicable(),
+                BoundedList.of(evidence),
+                ConfidenceReference.unassessed(),
+                BoundedList.empty(),
+                BoundedList.empty());
+        var root = ModelFixtures.diagnostic(
+                Severity.ERROR,
+                BoundedList.empty(),
+                BoundedList.empty(),
+                BoundedList.empty(),
+                TraceSummary.notApplicable(),
+                BoundedList.empty(),
+                ConfidenceReference.unassessed(),
+                BoundedList.of(List.of(
+                        new RelatedDiagnostic(Relation.RELATED, oversized),
+                        new RelatedDiagnostic(Relation.RELATED, oversized))),
+                BoundedList.empty());
+
+        assertThrows(LimitValidationException.class, () -> ModelFixtures.document(root));
     }
 
     private static Diagnostic budgetDocument(List<String> ids, int finalValueLength) {
