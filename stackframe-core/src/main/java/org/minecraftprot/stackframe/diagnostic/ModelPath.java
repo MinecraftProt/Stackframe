@@ -22,7 +22,8 @@ public record ModelPath(String value) {
             "affectedPath", "reason", "start", "end", "line", "column", "category");
 
     public ModelPath {
-        Validation.required(value, "$.modelPath");
+        value = Validation.safeText(
+                value, ModelLimits.TEXT_CODE_POINTS, false, "$.modelPath");
         if (!PATH_PATTERN.matcher(value).matches()) {
             throw new OmissionValidationException("$.modelPath", "is not a valid absolute model path");
         }

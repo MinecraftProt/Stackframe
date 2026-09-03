@@ -46,7 +46,7 @@ public record TraceSummary(
                     "$.trace", state + " must not claim a preserved destination or record ID");
         }
         if (state == TraceState.NOT_APPLICABLE
-                && (totalFrames.orElse(0) != 0
+                && (totalFrames.isPresent()
                         || shownFrames != 0
                         || omittedFrames != 0
                         || omittedCauses != 0)) {

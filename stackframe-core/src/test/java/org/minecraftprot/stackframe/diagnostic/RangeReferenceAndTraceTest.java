@@ -182,6 +182,14 @@ class RangeReferenceAndTraceTest {
                 Optional.empty(),
                 Optional.empty()));
         assertThrows(TraceValidationException.class, () -> new TraceSummary(
+                TraceState.NOT_APPLICABLE,
+                Optional.of(0),
+                0,
+                0,
+                0,
+                Optional.empty(),
+                Optional.empty()));
+        assertThrows(TraceValidationException.class, () -> new TraceSummary(
                 TraceState.PRESERVED,
                 Optional.empty(),
                 -1,
@@ -189,6 +197,71 @@ class RangeReferenceAndTraceTest {
                 0,
                 Optional.of(ModelFixtures.text("local store")),
                 Optional.empty()));
+    }
+
+    @Test
+    void traceStateMatrixPreservesAbsenceAndRecoverySemanticsInDocuments() {
+        assertDoesNotThrow(() -> ModelFixtures.document(ModelFixtures.minimalDiagnostic()));
+
+        var preserved = ModelFixtures.diagnostic(
+                Severity.ERROR,
+                BoundedList.empty(),
+                BoundedList.empty(),
+                BoundedList.empty(),
+                new TraceSummary(
+                        TraceState.PRESERVED,
+                        Optional.of(0),
+                        0,
+                        0,
+                        0,
+                        Optional.empty(),
+                        Optional.of(new DiagnosticId("record01"))),
+                BoundedList.empty(),
+                ConfidenceReference.unassessed(),
+                BoundedList.empty(),
+                BoundedList.empty());
+        assertDoesNotThrow(() -> ModelFixtures.document(preserved));
+
+        var writeFailed = ModelFixtures.diagnostic(
+                Severity.ERROR,
+                BoundedList.empty(),
+                BoundedList.of(List.of(new Note(
+                        NoteKind.NOTE,
+                        ModelFixtures.text("the complete trace could not be written"),
+                        BoundedList.empty()))),
+                BoundedList.empty(),
+                new TraceSummary(
+                        TraceState.WRITE_FAILED,
+                        Optional.of(0),
+                        0,
+                        0,
+                        0,
+                        Optional.empty(),
+                        Optional.empty()),
+                BoundedList.empty(),
+                ConfidenceReference.unassessed(),
+                BoundedList.empty(),
+                BoundedList.empty());
+        assertDoesNotThrow(() -> ModelFixtures.document(writeFailed));
+
+        assertThrows(TraceValidationException.class, () -> ModelFixtures.document(
+                ModelFixtures.diagnostic(
+                        Severity.ERROR,
+                        BoundedList.empty(),
+                        BoundedList.empty(),
+                        BoundedList.empty(),
+                        new TraceSummary(
+                                TraceState.NOT_APPLICABLE,
+                                Optional.of(0),
+                                0,
+                                0,
+                                0,
+                                Optional.empty(),
+                                Optional.empty()),
+                        BoundedList.empty(),
+                        ConfidenceReference.unassessed(),
+                        BoundedList.empty(),
+                        BoundedList.empty())));
     }
 
     @Test

@@ -103,6 +103,29 @@ class IdentifierAndSchemaTest {
     }
 
     @Test
+    void modelPathAcceptsExactTextLimitAndRejectsBeforeParsingOneMoreCodePoint() {
+        var exact = "$" + ".root".repeat(819);
+        var oversized = "$" + ".root".repeat(818) + ".title";
+
+        assertEquals(ModelLimits.TEXT_CODE_POINTS, exact.codePointCount(0, exact.length()));
+        assertEquals(ModelLimits.TEXT_CODE_POINTS + 1,
+                oversized.codePointCount(0, oversized.length()));
+        assertDoesNotThrow(() -> new ModelPath(exact));
+        assertThrows(LimitValidationException.class, () -> new ModelPath(oversized));
+        assertThrows(LimitValidationException.class,
+                () -> new ModelPath("$" + ".root".repeat(100_000)));
+    }
+
+    @Test
+    void modelPathLimitCountsSupplementaryCharactersAsCodePoints() {
+        var malformedButBounded = "$" + ".root".repeat(500) + "😀".repeat(1_000);
+
+        assertEquals(3_501, malformedButBounded.codePointCount(0, malformedButBounded.length()));
+        assertEquals(4_501, malformedButBounded.length());
+        assertThrows(OmissionValidationException.class, () -> new ModelPath(malformedButBounded));
+    }
+
+    @Test
     void schemaVersionHasIndependentAsciiRepresentation() {
         assertEquals("1.0", SchemaVersion.CURRENT.value());
         assertEquals("1.0", SchemaVersion.CURRENT.toString());
