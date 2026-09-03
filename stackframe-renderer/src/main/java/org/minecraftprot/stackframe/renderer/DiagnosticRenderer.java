@@ -411,8 +411,13 @@ public final class DiagnosticRenderer {
                     || cluster.text().equals(";")
                     || cluster.text().equals(":")
                     || cluster.text().equals(".")
+                    || cluster.text().equals("=")
+                    || cluster.text().equals("(")
                     || cluster.text().equals(")")
-                    || cluster.text().equals("]");
+                    || cluster.text().equals("[")
+                    || cluster.text().equals("]")
+                    || cluster.text().equals("{")
+                    || cluster.text().equals("}");
         }
 
         private void appendToken(

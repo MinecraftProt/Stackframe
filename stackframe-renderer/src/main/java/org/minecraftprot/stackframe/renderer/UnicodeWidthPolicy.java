@@ -255,7 +255,9 @@ public final class UnicodeWidthPolicy {
                 || codePoint == 0x2028
                 || codePoint == 0x2029
                 || codePoint >= 0x202A && codePoint <= 0x202E
-                || codePoint >= 0x2066 && codePoint <= 0x2069;
+                || codePoint >= 0x2066 && codePoint <= 0x2069
+                || UCharacter.getType(codePoint) == UCharacter.FORMAT
+                        && !isDefaultIgnorable(codePoint);
     }
 
     private static boolean isDefaultIgnorable(int codePoint) {

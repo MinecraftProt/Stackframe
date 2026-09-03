@@ -68,12 +68,14 @@ class WidthAndEquivalenceTest {
 
     @Test
     void quotedValuesVersionsAndConfigurationKeysRemainIntact() {
-        var title = "check \"hello world\" and 'hello beautiful world' "
-                + "without splitting don't version 3.10.2 configuration_key";
+        var title = "check \"hello world\" and ('hello beautiful world') "
+                + "key='another quoted value' without splitting don't "
+                + "version 3.10.2 configuration_key";
         var output = render(RendererFixtures.title(title), RenderWidth.known(24));
 
         assertTrue(output.contains("\"hello world\""));
         assertTrue(output.contains("'hello beautiful world'"));
+        assertTrue(output.contains("'another quoted value'"));
         assertTrue(output.contains("don't"));
         assertTrue(output.contains("3.10.2"));
         assertTrue(output.contains("configuration_key"));

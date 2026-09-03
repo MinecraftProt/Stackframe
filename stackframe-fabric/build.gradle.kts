@@ -10,8 +10,10 @@ dependencies {
 
     implementation(project(":stackframe-core"))
     implementation(project(":stackframe-renderer"))
+    runtimeOnly(libs.icu4j)
     add("include", project(":stackframe-core"))
     add("include", project(":stackframe-renderer"))
+    add("include", libs.icu4j)
 }
 
 loom {

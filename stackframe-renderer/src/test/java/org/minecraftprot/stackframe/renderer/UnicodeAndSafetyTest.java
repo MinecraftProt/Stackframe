@@ -37,6 +37,10 @@ class UnicodeAndSafetyTest {
                 "🇦\uFE0F", AmbiguousWidth.NARROW, false, 0);
         assertEquals("🇦\\u{FE0F}", invalidRegionalVariant.value());
         assertFalse(invalidRegionalVariant.certain());
+        var prependMark = UnicodeWidthPolicy.sanitize(
+                "\u0600界", AmbiguousWidth.NARROW, false, 0);
+        assertEquals("\\u{0600}界", prependMark.value());
+        assertFalse(prependMark.certain());
         assertTrue(UnicodeWidthPolicy.measure(
                 "e\u0301 = 界 + 👩🏽‍💻", AmbiguousWidth.NARROW).certain());
         var source = "e\u0301 = 界 + 👩🏽‍💻";
