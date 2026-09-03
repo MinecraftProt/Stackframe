@@ -49,6 +49,12 @@ configured one- or two-column policy for ambiguous characters. Tabs in excerpts
 expand at four-column tab stops. Unsupported or uncertain clusters use linear
 annotations instead of positional carets.
 
+ICU4J 78.3 remains under its `Unicode-3.0` license and included third-party
+notices; Stackframe's Apache-2.0 license does not relicense it. The authoritative
+notice is stored in
+[`THIRD-PARTY-NOTICES/icu4j-78.3-LICENSE.txt`](../THIRD-PARTY-NOTICES/icu4j-78.3-LICENSE.txt)
+and is copied into the published Fabric artifact.
+
 Model text is sanitized again at the output boundary. Controls, embedded line
 breaks, bidi controls, and unsupported default-ignorable characters become visible
 ASCII `\u{...}` escapes before measuring or wrapping. Renderer-owned ANSI output
