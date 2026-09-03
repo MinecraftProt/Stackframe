@@ -10,13 +10,13 @@ for the first dependency resolution.
 On Unix-like systems:
 
 ```shell
-./gradlew clean build
+./gradlew --no-daemon --stacktrace --dependency-verification=strict clean build verifyModuleBoundaries
 ```
 
 On Windows:
 
 ```powershell
-.\gradlew.bat clean build
+.\gradlew.bat --no-daemon --stacktrace --dependency-verification=strict clean build verifyModuleBoundaries
 ```
 
 The build includes `verifyModuleBoundaries`, which rejects disallowed project
@@ -26,6 +26,32 @@ reports can also be inspected directly:
 ```shell
 ./gradlew :stackframe-core:dependencies :stackframe-renderer:dependencies
 ```
+
+## Continuous integration
+
+GitHub Actions runs the exact command above for pull requests targeting `dev`
+and pushes to `main` or `dev`. CI validates the committed wrapper before using
+it, provisions Temurin Java 25, and preserves Gradle dependency verification and
+locking. It compiles, tests, remaps, and packages the normal Fabric artifact but
+does not start a Minecraft server or accept the EULA.
+
+Strict Gradle verification covers downloaded build, Fabric, and library
+artifacts. Loom also verifies its downloaded Minecraft JAR before transforming
+it. The exact `net.minecraft:minecraft-server-deobf:26.2` JAR in Loom's local
+file-backed repository is trusted without a fixed checksum because Loom generates
+it from that verified input and its transformed bytes vary by build platform.
+Gradle routes that module and all of its metadata exclusively to Loom's exact
+local repository under the Gradle User Home, and every other Maven repository
+explicitly excludes it. `verifyGeneratedMinecraftRepository` also fails the build
+unless the resolved JAR's real path is inside that repository. These controls
+prevent a remote repository, including one using artifact-only metadata, from
+serving bytes covered by the exception. No other group, module, version, or file
+is trusted without a checksum.
+
+When verification fails, the workflow uploads any Gradle problem reports, test
+reports, and test result XML as a `verification-reports-...` artifact on the
+failed Actions run. These artifacts are retained for five days. Runtime server
+directories, logs, and EULA files are never uploaded.
 
 ## Development dedicated server
 
