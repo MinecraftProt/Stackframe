@@ -36,6 +36,15 @@ without accepting protected originals. Redaction policy, throwable
 normalization, arbitration, trace storage, diagnostic-code allocation, and
 rendering remain separate provider contracts.
 
+## Diagnostic-code registry
+
+Package `org.minecraftprot.stackframe.diagnostic.registry` owns accepted
+`SF0xxx`-`SF5xxx` ranges, immutable allocation snapshots, evidence and fallback
+requirements, remediation ceilings, and the active `SF0001` generic fallback.
+The canonical declaration, generated searchable catalog, compatibility baseline,
+and intentional migration process are documented in
+[`docs/diagnostic-registry/`](../docs/diagnostic-registry/README.md).
+
 ## Worker notes
 
 - Coordinate public model changes before implementation.
