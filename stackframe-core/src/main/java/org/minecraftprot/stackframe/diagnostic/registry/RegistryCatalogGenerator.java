@@ -96,6 +96,12 @@ public final class RegistryCatalogGenerator {
                         .append("` | ")
                         .append(reason.meaning())
                         .append(" |\n"));
+        output.append("\n### Reason assignment contract\n\n")
+                .append("`")
+                .append(ArbitrationReasonAssignment.CONTRACT_ID)
+                .append("`: ")
+                .append(ArbitrationReasonAssignment.CONTRACT)
+                .append("\n");
         output.append("""
 
                 ## Governed remediation actions

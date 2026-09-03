@@ -46,8 +46,12 @@ identity, reviewed precedence from `-100` through `100`, and combination policy.
 The registry defines stable machine-readable arbitration reason codes and whether
 each applies to a selected candidate, non-selected candidate, fallback selection,
 or classifier. Low-confidence exclusion and generic fallback therefore remain
-distinct truthful outcomes. The registry does not execute arbitration; ADR 004
-remains the selection contract.
+distinct truthful outcomes. Consumers record an outcome through the immutable
+`ArbitrationReasonAssignment`, whose validated public constructor requires one
+non-null scope and exactly one non-null reason with the same governed scope.
+Convenience factories enforce the same constructor; there is no unvalidated
+construction path. The registry does not execute arbitration; ADR 004 remains
+the selection contract.
 
 ## Intentional compatibility migrations
 

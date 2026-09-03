@@ -54,6 +54,10 @@ No classifier registrations are allocated.
 | `selected` | `SELECTED_CANDIDATE` | Candidate was the unique highest eligible semantic result. |
 | `suppressed-lower-rank` | `NON_SELECTED_CANDIDATE` | An eligible candidate ranked below the selected result. |
 
+### Reason assignment contract
+
+`arbitration-reason-assignment-v1`: One required scope and exactly one required reason; the reason scope must match.
+
 ## Governed remediation actions
 
 | Action | Safety | Remedy evidence | Confirmation | Backup | Meaning |

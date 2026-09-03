@@ -28,6 +28,7 @@ class RegistryGovernanceTest {
         assertTrue(first.contains("generic.unexpected-operation"));
         assertTrue(first.contains("`fallback-conflict`"));
         assertTrue(first.contains("`excluded-low-confidence`"));
+        assertTrue(first.contains(ArbitrationReasonAssignment.CONTRACT_ID));
         assertTrue(first.contains("`RESTORE_FROM_BACKUP`"));
     }
 
@@ -115,6 +116,9 @@ class RegistryGovernanceTest {
                         baseline.replace(
                                 "excluded-low-confidence\tNON_SELECTED_CANDIDATE",
                                 "excluded-low-confidence\tFALLBACK_SELECTION"),
+                        baseline.replace(
+                                ArbitrationReasonAssignment.CONTRACT_ID,
+                                "arbitration-reason-assignment-v2"),
                         baseline.replace(
                                 "RESTORE_FROM_BACKUP\tDESTRUCTIVE_STATE_CHANGE",
                                 "RESTORE_FROM_BACKUP\tINSPECT_ONLY"))

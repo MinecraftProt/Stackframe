@@ -35,6 +35,10 @@ rejected-unknown-diagnostic	NON_SELECTED_CANDIDATE	A candidate referenced an unr
 rejected-unsupported-claim	NON_SELECTED_CANDIDATE	Required evidence did not support a candidate claim.
 selected	SELECTED_CANDIDATE	Candidate was the unique highest eligible semantic result.
 suppressed-lower-rank	NON_SELECTED_CANDIDATE	An eligible candidate ranked below the selected result.
+[arbitrationReasonAssignment]
+contractId	fields	scopeRequired	reasonCardinality	scopeMatch
+arbitration-reason-assignment-v1	scope,reason	true	exactly-one	true
+
 [remediationActions]
 action	safety	requiresRemedyEvidence	requiresConfirmation	requiresBackup	meaning
 CREATE_SANITIZED_SUPPORT_BUNDLE	INSPECT_ONLY	false	false	false	Create a sanitized local support bundle.
