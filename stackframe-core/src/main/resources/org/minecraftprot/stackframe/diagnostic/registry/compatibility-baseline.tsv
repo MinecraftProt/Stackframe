@@ -1,2 +1,43 @@
-code	symbolicKey	area	owner	lifecycle	titleKey	title	meaning	evidence	capabilities	fallbackCode	fallback	preservesOriginal	preservesDetails	permitsInference	remediationSafety	remediation	requiresRemedyEvidence	requiresConfirmation	requiresBackup	prohibitsAutomaticExecution	replacementCode	documentationAnchor
-SF0001	generic.unexpected-operation	GENERIC_INTERNAL	core-diagnostics	ACTIVE	generic.unexpected-operation.title	an unexpected server operation failed	Reports an unexpected operation failure when no safe specialized diagnosis is available.	Verified operation scope, redacted exception type when available, and trace preservation facts only.	FACT,SCOPE	SF0001	Emit SF0001 without inferred cause or blame; if completion fails, emit the original event unchanged.	true	true	false	INSPECT_ONLY	Inspect the correlated trace or create a sanitized local support bundle; do not change server state.	false	false	false	true		sf0001-unexpected-operation
+[areas]
+area	rangeDigit	minimumSuffix	maximumSuffix	range	meaning
+GENERIC_INTERNAL	0	0	999	SF0xxx	Stackframe and generic fallback
+LIFECYCLE_STARTUP	1	0	999	SF1xxx	Server lifecycle and startup
+DATA_RESOURCES	2	0	999	SF2xxx	Data, resources, registries, and worlds
+MODS_DEPENDENCIES	3	0	999	SF3xxx	Mods, mixins, and dependencies
+NETWORKING_PLAYERS	4	0	999	SF4xxx	Networking and players
+STORAGE_ENVIRONMENT	5	0	999	SF5xxx	Storage, permissions, and environment
+[entries]
+code	symbolicKey	area	owner	lifecycle	titleKey	title	meaning	evidence	capabilities	fallbackCode	fallback	preservesOriginal	preservesDetails	permitsInference	remediationActions	remediationSafety	remediationExplanation	requiresRemedyEvidence	requiresConfirmation	requiresBackup	prohibitsAutomaticExecution	replacementCode	documentationAnchor
+SF0001	generic.unexpected-operation	GENERIC_INTERNAL	core-diagnostics	ACTIVE	generic.unexpected-operation.title	an unexpected server operation failed	Reports an unexpected operation failure when no safe specialized diagnosis is available.	Verified operation scope, redacted exception type when available, and trace preservation facts only.	FACT,SCOPE	SF0001	Emit SF0001 without inferred cause or blame; if completion fails, emit the original event unchanged.	true	true	false	CREATE_SANITIZED_SUPPORT_BUNDLE,INSPECT_CORRELATED_TRACE	INSPECT_ONLY	Create a sanitized local support bundle. Inspect the correlated trace.	false	false	false	true		sf0001-unexpected-operation
+[classifiers]
+classifierKey	diagnosticCode	precedence	combinationPolicy
+
+[combinationPolicies]
+combinationPolicy	meaning
+COMPATIBLE_FACTS	Candidates may merge only when identity and required facts agree under ADR 004.
+NEVER	Candidates remain separate and cannot be merged.
+[arbitrationReasons]
+reasonCode	meaning
+classifier-failure	A classifier failed or returned malformed output and was isolated.
+fallback-conflict	Equal-ranked candidates disagreed in meaning or could not combine.
+fallback-internal-failure	An internal arbitration invariant failed and safe generic output was selected.
+fallback-limit	A deterministic processing limit prevented complete arbitration.
+fallback-no-eligible	No eligible specialized candidate remained.
+merged-compatible	Compatible candidates with the same identity were merged.
+rejected-duplicate-classifier-key	Every classifier sharing a duplicate key was disabled for the event.
+rejected-invalid-reference	A candidate referenced an absent failure unit or evidence item.
+rejected-malformed	A candidate violated its structural contract.
+rejected-unknown-diagnostic	A candidate referenced an unregistered or inactive diagnostic identity.
+rejected-unsupported-claim	Required evidence did not support a candidate claim.
+selected	Candidate was the unique highest eligible semantic result.
+suppressed-lower-rank	An eligible candidate ranked below the selected result.
+[remediationActions]
+action	safety	requiresRemedyEvidence	requiresConfirmation	requiresBackup	meaning
+CREATE_SANITIZED_SUPPORT_BUNDLE	INSPECT_ONLY	false	false	false	Create a sanitized local support bundle.
+EDIT_CONFIGURATION	REVERSIBLE_STATE_CHANGE	true	true	true	Edit a bounded configuration value after preserving its prior state.
+INSPECT_CORRELATED_TRACE	INSPECT_ONLY	false	false	false	Inspect the correlated trace.
+NONE	NONE	false	false	false	No operator remediation is authorized.
+REMOVE_OR_REPLACE_COMPONENT	DESTRUCTIVE_STATE_CHANGE	true	true	true	Remove or replace a named component only after backup and compatibility checks.
+RESTART_SERVER	REVERSIBLE_STATE_CHANGE	true	true	false	Restart the server after verified prerequisites are satisfied.
+RESTORE_FROM_BACKUP	DESTRUCTIVE_STATE_CHANGE	true	true	true	Restore a named artifact only from a verified compatible backup.
+VALIDATE_CONFIGURATION	INSPECT_ONLY	false	false	false	Validate configuration without changing it.

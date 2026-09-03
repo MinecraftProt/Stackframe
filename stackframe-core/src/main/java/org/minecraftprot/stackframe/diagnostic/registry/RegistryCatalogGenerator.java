@@ -1,5 +1,6 @@
 package org.minecraftprot.stackframe.diagnostic.registry;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
@@ -45,10 +46,84 @@ public final class RegistryCatalogGenerator {
                     .append(registry.entries(lifecycle).size())
                     .append("\n");
         }
+        output.append("\n## Governed arbitration metadata\n\n");
+        if (registry.classifiers().isEmpty()) {
+            output.append("No classifier registrations are allocated.\n");
+        } else {
+            output.append("""
+                    | Classifier key | Diagnostic | Precedence | Combination |
+                    | --- | --- | ---: | --- |
+                    """);
+            for (var classifier : registry.classifiers()) {
+                output.append("| `")
+                        .append(classifier.classifierKey())
+                        .append("` | `")
+                        .append(classifier.diagnosticCode().value())
+                        .append("` | ")
+                        .append(classifier.precedence())
+                        .append(" | `")
+                        .append(classifier.combinationPolicy())
+                        .append("` |\n");
+            }
+        }
+        output.append("""
+
+                ### Combination policies
+
+                | Policy | Meaning |
+                | --- | --- |
+                """);
+        Arrays.stream(CombinationPolicy.values())
+                .sorted(Comparator.comparing(Enum::name))
+                .forEach(policy -> output.append("| `")
+                        .append(policy)
+                        .append("` | ")
+                        .append(policy.meaning())
+                        .append(" |\n"));
+        output.append("""
+
+                ### Arbitration reason codes
+
+                | Reason code | Meaning |
+                | --- | --- |
+                """);
+        Arrays.stream(ArbitrationReasonCode.values())
+                .sorted(Comparator.comparing(ArbitrationReasonCode::key))
+                .forEach(reason -> output.append("| `")
+                        .append(reason.key())
+                        .append("` | ")
+                        .append(reason.meaning())
+                        .append(" |\n"));
+        output.append("""
+
+                ## Governed remediation actions
+
+                | Action | Safety | Remedy evidence | Confirmation | Backup | Meaning |
+                | --- | --- | --- | --- | --- | --- |
+                """);
+        Arrays.stream(RemediationAction.values())
+                .sorted(Comparator.comparing(Enum::name))
+                .forEach(action -> output.append("| `")
+                        .append(action)
+                        .append("` | `")
+                        .append(action.safety())
+                        .append("` | ")
+                        .append(action.requiresRemedyEvidence())
+                        .append(" | ")
+                        .append(action.requiresOperatorConfirmation())
+                        .append(" | ")
+                        .append(action.requiresBackup())
+                        .append(" | ")
+                        .append(action.meaning())
+                        .append(" |\n"));
         for (var entry : registry.entries()) {
             var capabilities = entry.evidence().capabilities().stream()
                     .sorted(Comparator.comparing(Enum::name))
                     .map(capability -> "`" + capability + "`")
+                    .collect(Collectors.joining(", "));
+            var actions = entry.remediation().actions().stream()
+                    .sorted(Comparator.comparing(Enum::name))
+                    .map(action -> "`" + action + "`")
                     .collect(Collectors.joining(", "));
             output.append("\n<a id=\"")
                     .append(entry.documentationAnchor())
@@ -75,10 +150,12 @@ public final class RegistryCatalogGenerator {
                     .append(entry.fallback().description())
                     .append(" (`")
                     .append(entry.fallback().fallbackCode().value())
-                    .append("`)\n- **Remediation safety:** `")
+                    .append("`)\n- **Remediation actions:** ")
+                    .append(actions)
+                    .append("\n- **Remediation safety:** `")
                     .append(entry.remediation().safety())
                     .append("` - ")
-                    .append(entry.remediation().description())
+                    .append(entry.remediation().explanation())
                     .append("\n");
         }
         return output.toString();

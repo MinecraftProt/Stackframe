@@ -40,7 +40,8 @@ public final class CanonicalDiagnosticRegistry {
                         true,
                         false),
                 RemediationPolicy.inspectOnly(
-                        "Inspect the correlated trace or create a sanitized local support bundle; do not change server state."),
+                        RemediationAction.INSPECT_CORRELATED_TRACE,
+                        RemediationAction.CREATE_SANITIZED_SUPPORT_BUNDLE),
                 DiagnosticLifecycle.ACTIVE,
                 Optional.empty(),
                 "sf0001-unexpected-operation");

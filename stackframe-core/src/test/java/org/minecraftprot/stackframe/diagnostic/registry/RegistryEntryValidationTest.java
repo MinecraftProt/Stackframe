@@ -1,7 +1,9 @@
 package org.minecraftprot.stackframe.diagnostic.registry;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 import java.util.Set;
@@ -14,10 +16,17 @@ import org.minecraftprot.stackframe.diagnostic.IdentifierValidationException;
 
 class RegistryEntryValidationTest {
     @ParameterizedTest
-    @ValueSource(strings = {"SF6000", "SF9999", "SF0000"})
+    @ValueSource(strings = {"SF6000", "SF9999"})
     void rejectsUnallocatedOrOutOfRangeCodes(String value) {
         var code = new DiagnosticCode(value);
         assertThrows(RegistryValidationException.class, () -> DiagnosticArea.forCode(code));
+    }
+
+    @Test
+    void acceptsEntireGenericRangeIncludingSf0000() {
+        var code = new DiagnosticCode("SF0000");
+        assertEquals(DiagnosticArea.GENERIC_INTERNAL, DiagnosticArea.forCode(code));
+        assertEquals(code, DiagnosticArea.GENERIC_INTERNAL.code(0));
     }
 
     @ParameterizedTest
@@ -37,7 +46,7 @@ class RegistryEntryValidationTest {
                 "Reports a data validation failure.",
                 evidence(Set.of(EvidenceCapability.IDENTITY, EvidenceCapability.SCOPE)),
                 RegistryFixtures.safeFallback(),
-                RemediationPolicy.none("No remediation is authorized."),
+                RemediationPolicy.none(),
                 DiagnosticLifecycle.ACTIVE,
                 Optional.empty(),
                 "data-example"));
@@ -57,7 +66,7 @@ class RegistryEntryValidationTest {
                 "Reports a startup failure.",
                 evidence(Set.of(EvidenceCapability.FACT)),
                 RegistryFixtures.safeFallback(),
-                RemediationPolicy.none("No remediation is authorized."),
+                RemediationPolicy.none(),
                 DiagnosticLifecycle.ACTIVE,
                 Optional.empty(),
                 "lifecycle-example"));
@@ -80,7 +89,7 @@ class RegistryEntryValidationTest {
                 "Reports a startup failure.",
                 evidence(Set.of(EvidenceCapability.IDENTITY, EvidenceCapability.SCOPE)),
                 null,
-                RemediationPolicy.none("No remediation is authorized."),
+                RemediationPolicy.none(),
                 DiagnosticLifecycle.ACTIVE,
                 Optional.empty(),
                 "lifecycle-example"));
@@ -88,32 +97,29 @@ class RegistryEntryValidationTest {
 
     @Test
     void rejectsUnsafeStateChangingRemediation() {
-        assertThrows(RegistryValidationException.class, () -> new RemediationPolicy(
-                "Change server state.",
-                RemediationSafety.REVERSIBLE_STATE_CHANGE,
-                false,
-                true,
-                true,
-                true));
-        assertDoesNotThrow(() -> new RemediationPolicy(
-                "Change reversible state only with evidence, confirmation, and backup.",
-                RemediationSafety.REVERSIBLE_STATE_CHANGE,
-                true,
-                true,
-                true,
-                true));
+        assertThrows(
+                RegistryValidationException.class,
+                () -> new RemediationPolicy(
+                        "Delete the world but label this as inspection.",
+                        Set.of(RemediationAction.INSPECT_CORRELATED_TRACE)));
+        assertThrows(
+                RegistryValidationException.class,
+                () -> new RemediationPolicy(
+                        "Deleting the world is inspection.",
+                        Set.of(RemediationAction.INSPECT_CORRELATED_TRACE)));
+
+        var policy = RemediationPolicy.of(RemediationAction.RESTORE_FROM_BACKUP);
+        assertEquals(RemediationSafety.DESTRUCTIVE_STATE_CHANGE, policy.safety());
+        assertTrue(policy.requiresRemedyEvidence());
+        assertTrue(policy.requiresOperatorConfirmation());
+        assertTrue(policy.requiresBackup());
+        assertTrue(policy.prohibitsAutomaticExecution());
     }
 
     @Test
     void genericFallbackCannotAuthorizeStateChanges() {
         var fallback = CanonicalDiagnosticRegistry.snapshot().genericFallback();
-        var mutating = new RemediationPolicy(
-                "Change reversible state only with evidence, confirmation, and backup.",
-                RemediationSafety.REVERSIBLE_STATE_CHANGE,
-                true,
-                true,
-                true,
-                true);
+        var mutating = RemediationPolicy.of(RemediationAction.EDIT_CONFIGURATION);
 
         assertThrows(RegistryValidationException.class, () -> new RegistryEntry(
                 fallback.code(),

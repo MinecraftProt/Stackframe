@@ -4,7 +4,8 @@ package org.minecraftprot.stackframe.diagnostic.registry;
 public enum RemediationSafety {
     NONE(false),
     INSPECT_ONLY(false),
-    REVERSIBLE_STATE_CHANGE(true);
+    REVERSIBLE_STATE_CHANGE(true),
+    DESTRUCTIVE_STATE_CHANGE(true);
 
     private final boolean mutatesState;
 

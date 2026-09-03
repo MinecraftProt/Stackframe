@@ -8,7 +8,7 @@ compatibility policy are documented in [README.md](README.md).
 
 | Range | Area | Registered | Available |
 | --- | --- | ---: | ---: |
-| `SF0xxx` | Stackframe and generic fallback | 1 | 998 |
+| `SF0xxx` | Stackframe and generic fallback | 1 | 999 |
 | `SF1xxx` | Server lifecycle and startup | 0 | 1000 |
 | `SF2xxx` | Data, resources, registries, and worlds | 0 | 1000 |
 | `SF3xxx` | Mods, mixins, and dependencies | 0 | 1000 |
@@ -21,6 +21,48 @@ compatibility policy are documented in [README.md](README.md).
 - **ACTIVE:** 1
 - **DEPRECATED:** 0
 
+## Governed arbitration metadata
+
+No classifier registrations are allocated.
+
+### Combination policies
+
+| Policy | Meaning |
+| --- | --- |
+| `COMPATIBLE_FACTS` | Candidates may merge only when identity and required facts agree under ADR 004. |
+| `NEVER` | Candidates remain separate and cannot be merged. |
+
+### Arbitration reason codes
+
+| Reason code | Meaning |
+| --- | --- |
+| `classifier-failure` | A classifier failed or returned malformed output and was isolated. |
+| `fallback-conflict` | Equal-ranked candidates disagreed in meaning or could not combine. |
+| `fallback-internal-failure` | An internal arbitration invariant failed and safe generic output was selected. |
+| `fallback-limit` | A deterministic processing limit prevented complete arbitration. |
+| `fallback-no-eligible` | No eligible specialized candidate remained. |
+| `merged-compatible` | Compatible candidates with the same identity were merged. |
+| `rejected-duplicate-classifier-key` | Every classifier sharing a duplicate key was disabled for the event. |
+| `rejected-invalid-reference` | A candidate referenced an absent failure unit or evidence item. |
+| `rejected-malformed` | A candidate violated its structural contract. |
+| `rejected-unknown-diagnostic` | A candidate referenced an unregistered or inactive diagnostic identity. |
+| `rejected-unsupported-claim` | Required evidence did not support a candidate claim. |
+| `selected` | Candidate was the unique highest eligible semantic result. |
+| `suppressed-lower-rank` | An eligible candidate ranked below the selected result. |
+
+## Governed remediation actions
+
+| Action | Safety | Remedy evidence | Confirmation | Backup | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| `CREATE_SANITIZED_SUPPORT_BUNDLE` | `INSPECT_ONLY` | false | false | false | Create a sanitized local support bundle. |
+| `EDIT_CONFIGURATION` | `REVERSIBLE_STATE_CHANGE` | true | true | true | Edit a bounded configuration value after preserving its prior state. |
+| `INSPECT_CORRELATED_TRACE` | `INSPECT_ONLY` | false | false | false | Inspect the correlated trace. |
+| `NONE` | `NONE` | false | false | false | No operator remediation is authorized. |
+| `REMOVE_OR_REPLACE_COMPONENT` | `DESTRUCTIVE_STATE_CHANGE` | true | true | true | Remove or replace a named component only after backup and compatibility checks. |
+| `RESTART_SERVER` | `REVERSIBLE_STATE_CHANGE` | true | true | false | Restart the server after verified prerequisites are satisfied. |
+| `RESTORE_FROM_BACKUP` | `DESTRUCTIVE_STATE_CHANGE` | true | true | true | Restore a named artifact only from a verified compatible backup. |
+| `VALIDATE_CONFIGURATION` | `INSPECT_ONLY` | false | false | false | Validate configuration without changing it. |
+
 <a id="sf0001-unexpected-operation"></a>
 ## SF0001 - an unexpected server operation failed
 
@@ -32,4 +74,5 @@ compatibility policy are documented in [README.md](README.md).
 - **Required evidence:** Verified operation scope, redacted exception type when available, and trace preservation facts only.
 - **Evidence capabilities:** `FACT`, `SCOPE`
 - **Fallback:** Emit SF0001 without inferred cause or blame; if completion fails, emit the original event unchanged. (`SF0001`)
-- **Remediation safety:** `INSPECT_ONLY` - Inspect the correlated trace or create a sanitized local support bundle; do not change server state.
+- **Remediation actions:** `CREATE_SANITIZED_SUPPORT_BUNDLE`, `INSPECT_CORRELATED_TRACE`
+- **Remediation safety:** `INSPECT_ONLY` - Create a sanitized local support bundle. Inspect the correlated trace.

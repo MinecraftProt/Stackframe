@@ -76,6 +76,77 @@ class DiagnosticRegistrySnapshotTest {
     }
 
     @Test
+    void validatesAndOrdersGovernedClassifierMetadata() {
+        var fallback = CanonicalDiagnosticRegistry.snapshot().genericFallback();
+        var firstEntry = RegistryFixtures.specialized(
+                "SF1001", "lifecycle.first", DiagnosticLifecycle.ACTIVE);
+        var secondEntry = RegistryFixtures.specialized(
+                "SF2001", "data.second", DiagnosticLifecycle.ACTIVE);
+        var later = new ClassifierRegistration(
+                "lifecycle.zeta",
+                firstEntry.code(),
+                10,
+                CombinationPolicy.NEVER);
+        var earlier = new ClassifierRegistration(
+                "data.alpha",
+                secondEntry.code(),
+                -10,
+                CombinationPolicy.COMPATIBLE_FACTS);
+        var registry = DiagnosticRegistrySnapshot.of(
+                List.of(secondEntry, fallback, firstEntry),
+                List.of(later, earlier));
+
+        assertEquals(
+                List.of("data.alpha", "lifecycle.zeta"),
+                registry.classifiers().stream()
+                        .map(ClassifierRegistration::classifierKey)
+                        .toList());
+        assertSame(earlier, registry.findClassifier("data.alpha").orElseThrow());
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> registry.classifiers().clear());
+        assertThrows(
+                RegistryValidationException.class,
+                () -> DiagnosticRegistrySnapshot.of(
+                        List.of(fallback, firstEntry, secondEntry),
+                        List.of(
+                                earlier,
+                                new ClassifierRegistration(
+                                        "data.alpha",
+                                        firstEntry.code(),
+                                        0,
+                                        CombinationPolicy.NEVER))));
+        assertThrows(
+                RegistryValidationException.class,
+                () -> new ClassifierRegistration(
+                        "data.invalid-precedence",
+                        secondEntry.code(),
+                        101,
+                        CombinationPolicy.NEVER));
+
+        var reserved = RegistryFixtures.specialized(
+                "SF1002", "lifecycle.reserved", DiagnosticLifecycle.RESERVED);
+        assertThrows(
+                RegistryValidationException.class,
+                () -> DiagnosticRegistrySnapshot.of(
+                        List.of(fallback, reserved),
+                        List.of(new ClassifierRegistration(
+                                "lifecycle.reserved",
+                                reserved.code(),
+                                0,
+                                CombinationPolicy.NEVER))));
+        assertThrows(
+                RegistryValidationException.class,
+                () -> DiagnosticRegistrySnapshot.of(
+                        List.of(fallback),
+                        List.of(new ClassifierRegistration(
+                                "generic.fallback",
+                                fallback.code(),
+                                0,
+                                CombinationPolicy.NEVER))));
+    }
+
+    @Test
     void snapshotsAndNestedCollectionsAreImmutable() {
         var source = new ArrayList<>(CanonicalDiagnosticRegistry.snapshot().entries());
         var registry = DiagnosticRegistrySnapshot.of(source);
@@ -91,6 +162,12 @@ class DiagnosticRegistrySnapshotTest {
                         .evidence()
                         .capabilities()
                         .add(EvidenceCapability.OWNERSHIP));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> registry.genericFallback()
+                        .remediation()
+                        .actions()
+                        .add(RemediationAction.RESTART_SERVER));
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> registry.availableCodes(DiagnosticArea.GENERIC_INTERNAL).clear());
@@ -117,6 +194,10 @@ class DiagnosticRegistrySnapshotTest {
                 .contains(new DiagnosticCode("SF1001")));
         assertTrue(registry.availableCodes(DiagnosticArea.LIFECYCLE_STARTUP)
                 .contains(new DiagnosticCode("SF1000")));
+        assertEquals(
+                new DiagnosticCode("SF0000"),
+                registry.availableCodes(DiagnosticArea.GENERIC_INTERNAL).getFirst());
+        assertEquals(999, registry.availableCodes(DiagnosticArea.GENERIC_INTERNAL).size());
     }
 
     @Test

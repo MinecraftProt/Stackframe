@@ -4,7 +4,7 @@ import org.minecraftprot.stackframe.diagnostic.DiagnosticCode;
 
 /** Governed allocation area for one accepted {@code SFxxxx} range. */
 public enum DiagnosticArea {
-    GENERIC_INTERNAL('0', 1, "Stackframe and generic fallback"),
+    GENERIC_INTERNAL('0', 0, "Stackframe and generic fallback"),
     LIFECYCLE_STARTUP('1', 0, "Server lifecycle and startup"),
     DATA_RESOURCES('2', 0, "Data, resources, registries, and worlds"),
     MODS_DEPENDENCIES('3', 0, "Mods, mixins, and dependencies"),
@@ -29,8 +29,16 @@ public enum DiagnosticArea {
         return displayName;
     }
 
-    int minimumSuffix() {
+    public char rangeDigit() {
+        return rangeDigit;
+    }
+
+    public int minimumSuffix() {
         return minimumSuffix;
+    }
+
+    public int maximumSuffix() {
+        return 999;
     }
 
     public boolean contains(DiagnosticCode code) {
@@ -41,11 +49,19 @@ public enum DiagnosticArea {
     }
 
     public DiagnosticCode code(int suffix) {
-        if (suffix < minimumSuffix || suffix > 999) {
+        if (suffix < minimumSuffix || suffix > maximumSuffix()) {
             throw new RegistryValidationException(
                     "suffix is outside allocated range " + range());
         }
-        return new DiagnosticCode("SF" + rangeDigit + "%03d".formatted(suffix));
+        var value = new char[] {
+            'S',
+            'F',
+            rangeDigit,
+            (char) ('0' + suffix / 100),
+            (char) ('0' + suffix / 10 % 10),
+            (char) ('0' + suffix % 10)
+        };
+        return new DiagnosticCode(new String(value));
     }
 
     public static DiagnosticArea forCode(DiagnosticCode code) {

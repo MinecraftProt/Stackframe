@@ -25,7 +25,7 @@ final class RegistryFixtures {
                                 EvidenceCapability.SCOPE,
                                 EvidenceCapability.FACT)),
                 safeFallback(),
-                RemediationPolicy.none("No operator state change is authorized."),
+                RemediationPolicy.none(),
                 lifecycle,
                 lifecycle == DiagnosticLifecycle.DEPRECATED
                         ? Optional.of(CanonicalDiagnosticRegistry.GENERIC_FALLBACK_CODE)

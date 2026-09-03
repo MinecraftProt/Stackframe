@@ -40,7 +40,8 @@ rendering remain separate provider contracts.
 
 Package `org.minecraftprot.stackframe.diagnostic.registry` owns accepted
 `SF0xxx`-`SF5xxx` ranges, immutable allocation snapshots, evidence and fallback
-requirements, remediation ceilings, and the active `SF0001` generic fallback.
+requirements, typed remediation ceilings, governed classifier metadata and
+arbitration reason codes, and the active `SF0001` generic fallback.
 The canonical declaration, generated searchable catalog, compatibility baseline,
 and intentional migration process are documented in
 [`docs/diagnostic-registry/`](../docs/diagnostic-registry/README.md).
