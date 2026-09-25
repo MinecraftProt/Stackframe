@@ -42,13 +42,16 @@ val forbiddenPlatformGroups = listOf(
     "org.apache.logging.log4j",
 )
 val generatedMinecraftGroup = "net.minecraft"
-val generatedMinecraftModule = "minecraft-server-deobf"
+val generatedMinecraftModules = mapOf(
+    "stackframe-fabric" to "minecraft-server-deobf",
+    "stackframe-fabric-client" to "minecraft-merged-deobf",
+)
 val generatedMinecraftVersion = libs.versions.minecraft.get()
-val generatedMinecraftFile = "$generatedMinecraftModule-$generatedMinecraftVersion.jar"
 val allowedProjectDependencies = mapOf(
     "stackframe-core" to emptySet(),
     "stackframe-renderer" to setOf("stackframe-core"),
     "stackframe-fabric" to setOf("stackframe-core", "stackframe-renderer"),
+    "stackframe-fabric-client" to setOf("stackframe-core", "stackframe-renderer"),
     "stackframe-testkit" to setOf(
         "stackframe-core",
         "stackframe-renderer",
@@ -123,14 +126,18 @@ subprojects {
         repositories.withType<MavenArtifactRepository>().configureEach {
             if (this !== loomRepository) {
                 content {
-                    excludeModule(generatedMinecraftGroup, generatedMinecraftModule)
+                    generatedMinecraftModules.values.forEach { module ->
+                        excludeModule(generatedMinecraftGroup, module)
+                    }
                 }
             }
         }
         repositories.exclusiveContent {
             forRepositories(loomRepository)
             filter {
-                includeModule(generatedMinecraftGroup, generatedMinecraftModule)
+                generatedMinecraftModules.values.forEach { module ->
+                    includeModule(generatedMinecraftGroup, module)
+                }
             }
         }
     }
@@ -170,7 +177,7 @@ subprojects {
         }
     }
 
-    if (name == "stackframe-fabric") {
+    if (name == "stackframe-fabric" || name == "stackframe-fabric-client") {
         pluginManager.withPlugin("fabric-loom") {
             val embeddedConfiguration = configurations.named("includeInternal")
             val reportFile = layout.buildDirectory.file("generated/supply-chain/dependencies.tsv")
@@ -367,40 +374,42 @@ val verifyGradleWrapper by tasks.registering {
 
 val verifyGeneratedMinecraftRepository by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Verifies Loom's generated Minecraft artifact resolves only from its local repository."
-    dependsOn(":stackframe-fabric:compileJava")
+    description = "Verifies Loom's generated server and client Minecraft artifacts resolve locally."
+    generatedMinecraftModules.keys.forEach { module ->
+        dependsOn(":$module:compileJava")
+    }
 
     doLast {
-        val fabricProject = project(":stackframe-fabric")
-        val loomRepository = fabricProject.repositories.named("LoomGlobalMinecraft").get()
-        check(loomRepository is MavenArtifactRepository) {
-            "LoomGlobalMinecraft must be a Maven repository."
-        }
-
-        val repositoryPath = Path.of(loomRepository.url).toRealPath()
-        val generatedArtifact = fabricProject.configurations
-            .getByName("compileClasspath")
-            .incoming
-            .artifacts
-            .artifacts
-            .single { artifact ->
-                val component = artifact.id.componentIdentifier as? ModuleComponentIdentifier
-                component?.group == generatedMinecraftGroup &&
-                    component.module == generatedMinecraftModule &&
-                    component.version == generatedMinecraftVersion &&
-                    artifact.file.name == generatedMinecraftFile
+        generatedMinecraftModules.forEach { (projectName, generatedMinecraftModule) ->
+            val fabricProject = project(":$projectName")
+            val loomRepository = fabricProject.repositories.named("LoomGlobalMinecraft").get()
+            check(loomRepository is MavenArtifactRepository) {
+                "LoomGlobalMinecraft must be a Maven repository."
             }
-        val artifactPath = generatedArtifact.file.toPath().toRealPath()
-
-        check(artifactPath.startsWith(repositoryPath)) {
-            "$generatedMinecraftGroup:$generatedMinecraftModule:$generatedMinecraftVersion " +
-                "must resolve from $repositoryPath, but resolved from $artifactPath."
+            val repositoryPath = Path.of(loomRepository.url).toRealPath()
+            val generatedArtifact = fabricProject.configurations
+                .getByName("compileClasspath")
+                .incoming
+                .artifacts
+                .artifacts
+                .single { artifact ->
+                    val component = artifact.id.componentIdentifier as? ModuleComponentIdentifier
+                    component?.group == generatedMinecraftGroup &&
+                        component.module == generatedMinecraftModule &&
+                        component.version == generatedMinecraftVersion &&
+                        artifact.file.name == "$generatedMinecraftModule-$generatedMinecraftVersion.jar"
+                }
+            val artifactPath = generatedArtifact.file.toPath().toRealPath()
+            check(artifactPath.startsWith(repositoryPath)) {
+                "$generatedMinecraftGroup:$generatedMinecraftModule:$generatedMinecraftVersion " +
+                    "must resolve from $repositoryPath, but resolved from $artifactPath."
+            }
+            logger.lifecycle(
+                "Verified {} resolves from Loom's local repository: {}",
+                "$generatedMinecraftGroup:$generatedMinecraftModule:$generatedMinecraftVersion",
+                repositoryPath,
+            )
         }
-        logger.lifecycle(
-            "Verified {} resolves from Loom's local repository: {}",
-            "$generatedMinecraftGroup:$generatedMinecraftModule:$generatedMinecraftVersion",
-            repositoryPath,
-        )
     }
 }
 

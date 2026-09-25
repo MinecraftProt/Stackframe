@@ -20,7 +20,7 @@ An epic groups related issues but is not itself an implementation branch.
 | Verification and compatibility | `stackframe-testkit/`, test fixtures, scoped CI | all modules in test scope | production-only testkit dependencies |
 | Documentation and release | `docs/`, root policy files, scoped release config | public contracts from all modules | unpublished assumptions presented as fact |
 | Forge platform | `stackframe-forge/` | core, renderer, stable platform SPI | Fabric |
-| Client platform | planned `stackframe-fabric-client/` and `stackframe-forge-client/` | core, renderer, client contract, stable platform SPI for Forge | dedicated-server internals as shared contracts |
+| Client platform | `stackframe-fabric-client/` bootstrap and planned `stackframe-forge-client/` | core, renderer, client contract, stable platform SPI for Forge | dedicated-server internals as shared contracts |
 
 Root Gradle settings, version catalogs, shared CI, README navigation, and public
 contract documents are coordination hotspots. An issue touching one names the

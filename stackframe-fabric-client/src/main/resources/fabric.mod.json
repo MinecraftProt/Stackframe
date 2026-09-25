@@ -1,0 +1,26 @@
+{
+    "schemaVersion": 1,
+    "id": "stackframe_client",
+    "version": "${version}",
+    "name": "Stackframe Fabric Client",
+    "description": "Client-side Stackframe bootstrap for Minecraft Java Edition.",
+    "authors": [
+        "MinecraftProt contributors"
+    ],
+    "contact": {
+        "issues": "https://github.com/MinecraftProt/Stackframe/issues",
+        "sources": "https://github.com/MinecraftProt/Stackframe"
+    },
+    "license": "Apache-2.0",
+    "environment": "client",
+    "entrypoints": {
+        "client": [
+            "org.minecraftprot.stackframe.fabric.client.StackframeClient"
+        ]
+    },
+    "depends": {
+        "fabricloader": "0.19.3",
+        "minecraft": "26.2",
+        "java": ">=25"
+    }
+}
