@@ -15,6 +15,7 @@ they do not replace implementation acceptance criteria.
 | [005](005-client-edition-boundaries.md) | Proposed | Separate client edition and preserve vanilla failure paths |
 | [006](006-diagnostic-localization.md) | Proposed | Localize catalog prose after typed redaction |
 | [007](007-evidence-based-compatibility-matrix.md) | Proposed | Pin evidence-based compatibility claims to each release |
+| [008](008-loader-neutral-extension-api.md) | Proposed | Loader-neutral diagnostic extension API with bounded safe output |
 
 Create an ADR when changing:
 

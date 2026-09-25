@@ -51,6 +51,16 @@ The canonical declaration, generated searchable catalog, compatibility baseline,
 and intentional migration process are documented in
 [`docs/diagnostic-registry/`](../docs/diagnostic-registry/README.md).
 
+## Extension API
+
+Package `org.minecraftprot.stackframe.extension` accepts namespaced, typed
+findings from registered callbacks against already-redacted, loader-neutral
+context. Its bounded host isolates failures and timeouts, disables colliding
+namespaces, and converts every raw extension evidence value to a typed omission
+marker until the redaction policy is implemented. Extension codes never allocate
+`SF####` identities. The lifecycle, limits, privacy boundary, reference extension,
+and pending integration are documented in [`docs/EXTENSIONS.md`](../docs/EXTENSIONS.md).
+
 ## Throwable normalization
 
 Package `org.minecraftprot.stackframe.normalization` iteratively copies throwable
