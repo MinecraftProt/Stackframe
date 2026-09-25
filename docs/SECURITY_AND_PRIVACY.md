@@ -6,7 +6,7 @@ untrusted and potentially sensitive.
 
 ## Security goals
 
-- Never hide an original server failure because Stackframe failed.
+- Never hide an original server or client failure because Stackframe failed.
 - Prevent terminal control injection and structured-output injection.
 - Keep enrichment inside approved server paths.
 - Redact protected values before operator, structured, or bundle output.
@@ -18,7 +18,8 @@ untrusted and potentially sensitive.
 
 Inputs may be controlled by a malicious mod, malformed world or datapack,
 untrusted configuration, player-triggered action, compromised dependency, or
-unexpected platform behavior.
+unexpected platform behavior. On a client, a remote server, disconnect reason,
+resource pack, and local UI or clipboard state add untrusted input surfaces.
 
 An attacker may try to:
 
@@ -44,6 +45,43 @@ path, throwable, metadata object, and extension as untrusted.
 | World data | player files, chunks, inventories | Never include as context or bundles by default |
 
 Classification occurs before rendering. A renderer cannot opt out of redaction.
+
+## Client edition data handling
+
+The planned client edition follows the same completed-model redaction boundary
+and the [client contract](CLIENT_EDITION.md). The current model's
+`SERVER_SENSITIVE` class also covers private client environment and endpoint
+values; it is a shared sensitivity label, not a claim that the value came from a
+server. A single value with several possible classes takes the most protective
+applicable treatment. Unknown or unclassifiable input is protected by default.
+
+| Client data | Model class | Default client behavior |
+| --- | --- | --- |
+| Diagnostic code, lifecycle phase, Minecraft/Java/loader version, validated generic graphics capability | Public technical (`PUBLIC`) | May appear after validation and sanitization; a precise device identifier is not generic |
+| A single verified mod ID/version needed to explain a failure | Public technical (`PUBLIC`) after policy review | May appear when ownership is verified; free-form mod names and a bulk installed-mod inventory remain untrusted and must be filtered or omitted |
+| Account name, profile/skin identifier, UUID, friend identity, player identifier | Personal (`PERSONAL`) | Do not collect as context; redact if present in an exception or platform event |
+| Authentication/session token, password, private key, account credential | Secret (`SECRET`) | Never collect intentionally; always redact if encountered |
+| Chat, commands, book/sign text, private messages, player-generated content | Personal (`PERSONAL`) or world data (`WORLD_DATA`) | Do not collect or excerpt; redact/omit if embedded in an observed failure |
+| Server hostname, IP address, port, invite code, realm identifier, connection identifier | Server-sensitive (`SERVER_SENSITIVE`), or `SECRET` when it grants access | Generalize to a remote endpoint or typed marker in Stackframe output; no exact address by default |
+| Screenshot, framebuffer, visible world/player state | World data (`WORLD_DATA`), possibly also personal or secret | Never capture, attach, or infer content from pixels |
+| Clipboard contents | Unknown, treated as secret (`SECRET`) | Never read; copy only an explicitly previewed, redacted diagnostic after a user action |
+| Absolute local path, home directory, device identifier, exact graphics driver/device string, full mod inventory | Server-sensitive (`SERVER_SENSITIVE`) | Generalize or redact; prefer a verified relative category or component without user-directory segments |
+| Local file contents, including configs, save/world files, crash reports, logs, and launcher files | Classify by content, potentially `SECRET` or `WORLD_DATA` | Do not read for enrichment in the first client edition; an exception-provided path never authorizes a read |
+
+These defaults apply to log supplements, crash and in-game views, narration,
+structured output, extension data, copy/export, and support bundles. Redaction
+must inspect causes, suppressed exceptions, evidence summaries, and any remote
+reason text before the completed diagnostic reaches a renderer. Untrusted remote
+reason text does not establish server root cause or authorize display of a
+protected value.
+
+Original Minecraft/loader logs and vanilla crash reports are preserved through
+their normal local paths, not rewritten or deleted to enforce Stackframe's
+redaction policy. Those raw files may contain personal data or secrets. Their
+location must be labeled as raw when shown to a player; a sanitized copy/export
+control must not silently include them. Client support bundles remain explicit,
+previewable, local, and sanitized; original raw files are excluded by default.
+There is no automatic screenshot, clipboard read, telemetry, or upload.
 
 ## Redaction rules
 

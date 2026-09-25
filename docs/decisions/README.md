@@ -12,6 +12,7 @@ they do not replace implementation acceptance criteria.
 | [002](002-initial-platform-baseline.md) | Proposed | Initial Minecraft, Java, Fabric, Loom, and Gradle baseline |
 | [003](003-loader-independent-diagnostic-model.md) | Proposed | Loader-independent diagnostic model |
 | [004](004-classifier-arbitration.md) | Proposed | Deterministic classifier arbitration |
+| [005](005-client-edition-boundaries.md) | Proposed | Separate client edition and preserve vanilla failure paths |
 
 Create an ADR when changing:
 

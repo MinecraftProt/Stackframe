@@ -252,6 +252,8 @@ Define client-specific lifecycle, UI, threading, privacy, and artifact boundarie
 ship a separate Fabric client artifact; then implement Forge client support
 through the shared platform SPI. Client diagnostics reuse the core model, codes,
 redaction, and renderer semantics rather than becoming a separate language.
+The normative scope and fallback behavior are in
+[CLIENT_EDITION.md](CLIENT_EDITION.md) and [ADR 005](decisions/005-client-edition-boundaries.md).
 
 ## Non-goals for the first release
 
