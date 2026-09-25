@@ -1,8 +1,8 @@
 # Stackframe documentation
 
 This directory contains the product and engineering contracts for Stackframe.
-Until executable modules exist, these documents and the issue tracker define the
-expected behavior.
+The modules are pre-alpha. These documents and the issue tracker distinguish
+implemented behavior from contracts that still need integration evidence.
 
 ## Start here
 
@@ -27,6 +27,15 @@ expected behavior.
 11. [Worker handoff](HANDOFF.md) defines the context required when work changes
    sessions or unlocks a dependent task.
 
+## Operator help
+
+- [Diagnostic catalog](diagnostics/README.md) lists registered codes and links
+  to operator guidance.
+- [Troubleshooting](TROUBLESHOOTING.md) covers trace lookup, plain output,
+  configuration, hosting panels, and sanitized reports.
+- [Full trace records](FULL_TRACES.md) explains local raw-record recovery and
+  retention.
+
 ## Decision records
 
 Significant decisions live in [`decisions/`](decisions/README.md). An
@@ -40,6 +49,7 @@ policy, or release guarantee.
 | --- | --- |
 | Diagnostic model or pipeline | `PROJECT.md`, relevant decision record |
 | Console message or layout | `DIAGNOSTIC_STYLE.md`, golden fixtures |
+| Diagnostic code or operator guidance | `diagnostics/`, `TROUBLESHOOTING.md`, generated registry catalog |
 | Supported environment | `COMPATIBILITY.md`, release notes |
 | Sensitive data handling | `SECURITY_AND_PRIVACY.md`, threat fixtures |
 | Milestone or release scope | `ROADMAP.md`, GitHub milestone/project |
