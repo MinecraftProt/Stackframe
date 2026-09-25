@@ -5,6 +5,7 @@ plugins {
 description = "Loader-independent Stackframe diagnostic contracts and processing"
 
 dependencies {
+    testImplementation(project(":stackframe-testkit"))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
