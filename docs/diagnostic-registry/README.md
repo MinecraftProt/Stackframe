@@ -13,6 +13,10 @@ remediation action, and allocated diagnostic. Do not edit it by hand:
 .\gradlew.bat :stackframe-core:generateDiagnosticRegistryCatalog
 ```
 
+Operator-facing checks and recovery limits live in the
+[diagnostic guide index](../diagnostics/README.md). Its active and deprecated
+code pages are validated against this registry by the core test suite.
+
 `check` regenerates the catalog in memory and fails on drift. It also compares the
 canonical declaration with the committed compatibility baseline. The baseline
 records every stable code, symbolic key, area, owner, lifecycle, title contract,

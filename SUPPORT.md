@@ -10,7 +10,8 @@ even when the development artifact builds or starts.
 ## Before opening an issue
 
 1. Search existing issues and the public roadmap.
-2. Read the diagnostic catalog when it becomes available.
+2. Read the [diagnostic catalog](docs/diagnostics/README.md) and
+   [troubleshooting guide](docs/TROUBLESHOOTING.md).
 3. Recover the complete trace using the diagnostic correlation ID.
 4. Reproduce with the smallest relevant mod and configuration set when safe.
 5. Remove tokens, public addresses, player data, and private paths.
