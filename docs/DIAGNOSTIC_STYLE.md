@@ -396,9 +396,10 @@ Color is optional emphasis. It never conveys unique meaning.
   spans, and relationships remain explicit when all styling is removed.
 - Do not describe an item only as `the red line`, `the highlighted value`, or
   `the item above`. Name the item or its label.
-- Respect `NO_COLOR`. Stackframe's explicit plain setting also disables ANSI.
-  Do not emit ANSI in automatic mode when output is redirected or capability is
-  unknown.
+- In automatic mode, a nonempty `NO_COLOR` disables ANSI. Stackframe's explicit
+  plain setting always disables ANSI. An explicit ANSI setting overrides
+  `NO_COLOR` when an operator knowingly forces styling. Do not emit ANSI in
+  automatic mode when output is redirected or capability is unknown.
 - When Stackframe controls both text and background colors, normal text must
   meet the WCAG 2.2 [Contrast Minimum](https://www.w3.org/TR/WCAG22/#contrast-minimum)
   ratio of at least 4.5:1. Stackframe-drawn non-text indicators needed to locate
