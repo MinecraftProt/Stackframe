@@ -110,8 +110,9 @@ breaking change, not an editorial change.
 
 ## Grammar by message part
 
-This contract applies to English output. Future localization may change grammar,
-but it must preserve field meaning and the accessibility requirements.
+This contract applies to English output. Future localization follows
+[LOCALIZATION.md](LOCALIZATION.md) and may change grammar, but it must preserve
+field meaning and the accessibility requirements.
 
 | Part | Required grammar | Punctuation |
 | --- | --- | --- |
