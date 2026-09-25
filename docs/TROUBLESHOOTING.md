@@ -8,54 +8,53 @@ codes and their evidence and safety contracts.
 
 ## Current availability
 
-Stackframe is pre-alpha. The core registry, terminal/plain renderer, and local
-`TraceRecorder` exist, but the Fabric artifact currently has only a bootstrap
-entry point. It does not yet capture failures or emit the example diagnostics
-below. Fabric capture is [issue #10](https://github.com/MinecraftProt/Stackframe/issues/10);
+Stackframe is pre-alpha. The development Fabric server artifact observes
+throwable-bearing `ERROR` and `FATAL` Log4j events after its `preLaunch` hook,
+writes local full traces, and emits the generic `SF0001` diagnostic through the
+existing appenders. It does not yet classify specialized failures or cover
+loader errors before `preLaunch`. Full Fabric capture verification remains in
+[issue #10](https://github.com/MinecraftProt/Stackframe/issues/10);
 operator configuration is [issue #14](https://github.com/MinecraftProt/Stackframe/issues/14);
 the sanitized support-bundle feature is
 [issue #36](https://github.com/MinecraftProt/Stackframe/issues/36).
-Do not treat a documented code or example as proof of a released integration.
+The adapter has an isolated test suite and a no-EULA startup smoke test, but no
+released compatibility claim or full dedicated-server integration matrix.
 
 ## Read a diagnostic
 
-Read a plain diagnostic from top to bottom: severity and code, verified
+Read a plain diagnostic from top to bottom: severity and code, any verified
 location, evidence-backed cause or note, safe help, then `trace:`. ANSI adds
-emphasis but no extra facts. For example, this is an illustrative plain
-`SF0001` message:
+emphasis but no extra facts. For example, this is an illustrative generic
+`SF0001` payload from the development Fabric path:
 
 ```text
 error[SF0001]: an unexpected server operation failed
-location: server startup
-exception: com.example.CustomException
-note: Stackframe has no specialized diagnostic for this failure
-help: inspect diagnostic C9012E
-trace: 31 frames collapsed; complete details preserved as diagnostic C9012E
+trace: complete details preserved as diagnostic C9012E0000000000; diagnostic
+  DC9012E0000000000; correlation C9012E0000000000
 ```
 
-The `C9012E` token is a synthetic correlation ID. It is not a server address,
+The `C9012E0000000000` token is a synthetic correlation ID. It is not a server address,
 timestamp, filename from your server, or proof of a cause. The complete event
 may contain more causes and suppressed exceptions than the short view.
 
 ## Find the full trace
 
-The implemented core recorder writes a successful full trace to
+The Fabric adapter's core recorder writes a successful full trace to
 `logs/stackframe-traces/<correlation-id>.trace`, relative to the server working
 directory. It uses the same opaque correlation ID shown in the diagnostic.
 The record contains the original Java throwable, causes, suppressed exceptions,
 and frames. See [Full trace records](FULL_TRACES.md) for write guarantees,
-permissions, and retention. The current Fabric bootstrap does not invoke this
-recorder for failures yet.
+permissions, and retention.
 
-With the synthetic `C9012E` example, an administrator can read the local file
+With the synthetic `C9012E0000000000` example, an administrator can read the local file
 after a diagnostic has actually reported that it was preserved:
 
 ```powershell
-Get-Content -LiteralPath 'logs/stackframe-traces/C9012E.trace'
+Get-Content -LiteralPath 'logs/stackframe-traces/C9012E0000000000.trace'
 ```
 
 ```shell
-less -- 'logs/stackframe-traces/C9012E.trace'
+less -- 'logs/stackframe-traces/C9012E0000000000.trace'
 ```
 
 The directory is relative to the process working directory, which may differ
@@ -80,11 +79,12 @@ Stackframe itself failed, and it does not name a responsible mod. Follow the
 [SF0001 safe checks](diagnostics/SF0001.md#safe-checks) and preserve the
 original event.
 
-If Stackframe cannot normalize, redact, or render a diagnostic at all, its
+If Stackframe cannot preserve or render a diagnostic at all, its
 fail-open contract leaves the original error unchanged and reports its own
 failure separately where safe. That original event may have no `SF####` header.
 Do not relabel it as `SF0001` or infer that the first stack frame is the cause.
-The capture integration that must prove this behavior is still pending.
+The current observer and worker preserve the original Log4j event in isolated
+failure tests; full dedicated-server lifecycle evidence is still pending.
 
 ## Configuration errors
 
@@ -107,8 +107,9 @@ The renderer library supports `PLAIN` and `ANSI`, and its capability selector
 supports `AUTO`. In `AUTO`, redirected output, CI, `TERM=dumb`, unknown
 terminals, nonempty `NO_COLOR`, or `CLICOLOR=0` select plain text. Explicit
 `ANSI` is an intentional override, including over `NO_COLOR`. Explicit
-`PLAIN` disables styling. The Fabric adapter and operator configuration have
-not wired these choices into a released diagnostic output path yet.
+`PLAIN` disables styling. The development Fabric adapter currently emits its
+generic diagnostic in plain mode. Operator configuration and automatic mode
+selection are not wired into a released output path yet.
 
 If ANSI escape codes appear as characters in a future hosting panel or saved
 log, first use that panel's raw log download or plain-text view. For automatic

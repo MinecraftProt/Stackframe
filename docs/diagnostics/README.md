@@ -9,12 +9,13 @@ are not emitted and do not need an operator page until activation.
 
 | Code | Meaning | Registry state | Release state |
 | --- | --- | --- | --- |
-| [SF0001](SF0001.md) | Unexpected operation; no safe specialized diagnosis | Active | Unreleased; Fabric capture is not integrated |
+| [SF0001](SF0001.md) | Unexpected operation; no safe specialized diagnosis | Active | Unreleased; development Fabric adapter emits a generic fallback |
 
 An active registry allocation is a contract, not proof that a released artifact
-emits it. The current Fabric artifact is a bootstrap and does not yet capture
-errors. See [Troubleshooting](../TROUBLESHOOTING.md) for trace lookup, plain
-output, hosting panels, configuration questions, and safe reporting.
+emits it. The development Fabric adapter observes severe Log4j events with
+throwables, but has no published support claim. See
+[Troubleshooting](../TROUBLESHOOTING.md) for trace lookup, plain output, hosting
+panels, configuration questions, and safe reporting.
 
 ## How the catalog stays in sync
 

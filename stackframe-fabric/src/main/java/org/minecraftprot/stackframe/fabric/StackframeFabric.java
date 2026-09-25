@@ -5,6 +5,7 @@ import net.fabricmc.api.ModInitializer;
 public final class StackframeFabric implements ModInitializer {
     @Override
     public void onInitialize() {
+        FabricCaptureBootstrap.install();
         System.out.println("[Stackframe] Loaded Stackframe dedicated-server bootstrap.");
     }
 }
