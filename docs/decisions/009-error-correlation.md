@@ -11,8 +11,8 @@ One underlying failure can be seen by several capture points and produce
 repeated Stackframe diagnostics. Matching on text would hide distinct errors
 with the same wording, while unbounded identity state would retain private
 throwables or grow under an error storm. A crash must remain visible even when
-similar observations are suppressed. The Fabric capture path and trace-ID
-coordination are not yet integrated.
+similar observations are suppressed. Fabric's initial capture path already
+preserves original Log4j events and writes separate trace files.
 
 ## Decision
 
@@ -37,11 +37,12 @@ backward clock sample retires existing windows. Synchronized operations give
 one leader and exact counts under concurrent calls. Disabled mode bypasses
 suppression and retains no state.
 
-The adapter publishes summaries returned by observations, polls
-`drainExpired`, and calls `drainAll` at shutdown/configuration replacement.
-Integration must coordinate the first correlation ID with trace preservation,
-retain original logging, and validate the operator rendering. The core-only
-change is not sufficient to claim live duplicate suppression.
+The Fabric adapter publishes summaries returned by observations, polls
+`drainExpired`, and calls `drainAll` at shutdown. It allocates a candidate
+correlation ID before observing, and the trace recorder accepts the selected
+ID for the first emitted diagnostic. Suppressed observations write no extra
+trace. The Log4j observer passes `FATAL` as critical and `ERROR` as ordinary;
+its original appenders remain independent of the supplemental queue.
 
 ## Alternatives considered
 
@@ -79,13 +80,16 @@ window emits a new leader after the bound and keeps operator visibility.
   summaries and time-based retirement.
 - An abrupt process stop can lose pending ordinary summaries. Critical events
   always emit, and the original platform event remains untouched.
-- The current trace API does not reserve a caller-selected correlation ID.
-  Trace coordination and live Fabric verification remain follow-up work.
+- A caller-selected trace ID can collide with an existing file. That attempt
+  fails without overwriting the trace, and the diagnostic reports the failure.
+- Operator-facing configuration wiring and real server compatibility evidence
+  remain separate from the core and isolated pipeline tests.
 
 ## Validation
 
 Core tests prove distinct identity, exact repeat counts, concurrent one-leader
 behavior, window boundaries, capacity eviction, critical bypass, disabled
-mode, and clock regression. Platform integration tests must later prove
-original logs/crash paths continue, trace IDs match emitted diagnostics,
-summaries are published, and live duplicate observations are collapsed.
+mode, and clock regression. Fabric pipeline tests prove chosen trace IDs match
+emitted diagnostics, summaries are published, duplicate traces are avoided,
+`FATAL` bypasses suppression, and original Log4j events continue. Real server
+compatibility remains a separate release gate.

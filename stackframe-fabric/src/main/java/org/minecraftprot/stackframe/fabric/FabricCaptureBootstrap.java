@@ -18,8 +18,10 @@ public final class FabricCaptureBootstrap {
         Log4jFailureCapture capture = null;
         try {
             pipeline = new FabricDiagnosticPipeline();
-            capture = Log4jFailureCapture.install(
-                    (LoggerContext) LogManager.getContext(false), pipeline::accept);
+            var readyPipeline = pipeline;
+            capture = Log4jFailureCapture.installWithImportance(
+                    (LoggerContext) LogManager.getContext(false),
+                    (throwable, importance) -> readyPipeline.accept(throwable, importance));
             var installed = new Installation(capture, pipeline);
             Runtime.getRuntime().addShutdownHook(new Thread(
                     installed::close, "stackframe-diagnostic-shutdown"));

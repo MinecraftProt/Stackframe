@@ -60,6 +60,61 @@ public final class TraceRecorder {
         return directory;
     }
 
+    /** Allocate a candidate ID before correlation; only a successful write reserves it. */
+    public CorrelationId newCorrelationId() {
+        return new CorrelationId(randomIdentifier());
+    }
+
+    /**
+     * Preserve the original failure using the correlation ID chosen before
+     * duplicate suppression. A collision fails safely instead of changing the
+     * ID already returned by the correlator or replacing an existing trace.
+     */
+    public TraceRecord record(Throwable throwable, CorrelationId id) {
+        Objects.requireNonNull(throwable, "throwable");
+        Objects.requireNonNull(id, "id");
+        try {
+            prepareDirectory();
+            var target = directory.resolve(id.value() + ".trace");
+            var partial = directory.resolve(id.value() + ".partial");
+            if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+                return failed(id, TraceWriteFailure.IDENTIFIER_EXHAUSTED);
+            }
+            try {
+                createPrivateFile(partial);
+            } catch (FileAlreadyExistsException collision) {
+                return failed(id, TraceWriteFailure.IDENTIFIER_EXHAUSTED);
+            }
+            try {
+                if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+                    return failed(id, TraceWriteFailure.IDENTIFIER_EXHAUSTED);
+                }
+                writeThrowable(partial, throwable);
+                publish(partial, target);
+                return new TraceRecord(
+                        id,
+                        new DiagnosticId(id.value()),
+                        TraceState.PRESERVED,
+                        Optional.of(target),
+                        Optional.empty());
+            } catch (FileAlreadyExistsException collision) {
+                return failed(id, TraceWriteFailure.IDENTIFIER_EXHAUSTED);
+            } finally {
+                removePartial(partial);
+            }
+        } catch (Throwable failure) {
+            if (failure instanceof Error) {
+                throw (Error) failure;
+            }
+            var category = failure instanceof SecurityException
+                    ? TraceWriteFailure.PERMISSION_DENIED
+                    : failure instanceof IOException
+                            ? TraceWriteFailure.STORAGE_UNAVAILABLE
+                            : TraceWriteFailure.TRACE_UNREADABLE;
+            return failed(id, category);
+        }
+    }
+
     /**
      * Returns a safe status even if the filesystem or throwable printer fails.
      * JVM errors remain fatal to the caller.

@@ -51,6 +51,11 @@ production-hardening work; until then, monitor available disk space.
 
 Call `TraceRecorder.record(originalThrowable)` before constructing a completed
 diagnostic. Use `TraceRecord.summary(...)` for the diagnostic's `TraceSummary`.
+When correlation runs before trace preservation, call
+`TraceRecorder.newCorrelationId()` for a candidate, then
+`record(originalThrowable, selectedCorrelationId)` only for an emitted
+diagnostic. A collision with an existing trace ID returns `WRITE_FAILED` and
+does not overwrite the old file or change the selected ID.
 If the state is `WRITE_FAILED`, include `TraceRecord.failureNote()` in that node's
 notes and keep the original server error in the normal log. Never build a
 `PRESERVED` summary from a failed result. Release the source throwable reference
