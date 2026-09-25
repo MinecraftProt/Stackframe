@@ -83,7 +83,10 @@ Release automation should:
 2. Use the committed Gradle wrapper and selected Java toolchain.
 3. Run the complete release test matrix.
 4. Include the root `LICENSE`, identify Stackframe as `Apache-2.0`, and generate
-   checksums, dependency/license data, and provenance.
+   checksums, dependency/license data, and provenance. The Fabric JAR already
+   embeds a verified dependency/license inventory for its bundled components;
+   maintainers review platform-provided dependencies separately using
+   [the supply-chain procedure](SUPPLY_CHAIN.md).
 5. Produce release notes from reviewed issues and pull requests.
 6. For **each** downloadable artifact, record its filename, SHA-256, source
    commit, applicable matrix row IDs, and a permalink to the exact

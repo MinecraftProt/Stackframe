@@ -1,13 +1,18 @@
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.jvm.tasks.Jar
 import java.nio.file.Path
+import java.security.MessageDigest
+import java.util.HexFormat
 import java.util.Properties
+import java.util.zip.ZipFile
 
 plugins {
     base
@@ -149,6 +154,121 @@ subprojects {
             useJUnitPlatform()
         }
     }
+
+    if (name == "stackframe-fabric") {
+        pluginManager.withPlugin("fabric-loom") {
+            val embeddedConfiguration = configurations.named("includeInternal")
+            val reportFile = layout.buildDirectory.file("generated/supply-chain/dependencies.tsv")
+            // New bundled components must receive an explicit license review here.
+            val approvedLicenses = mapOf(
+                ":stackframe-core" to ("Apache-2.0" to "LICENSE_stackframe"),
+                ":stackframe-renderer" to ("Apache-2.0" to "LICENSE_stackframe"),
+                "com.ibm.icu:icu4j:78.3" to
+                    ("Unicode-3.0" to "META-INF/licenses/icu4j-78.3-LICENSE.txt"),
+            )
+
+            val generateEmbeddedDependencyReport by tasks.registering {
+                group = LifecycleBasePlugin.VERIFICATION_GROUP
+                description = "Records reviewed dependencies bundled in the Fabric artifact."
+                inputs.files(embeddedConfiguration)
+                inputs.property("approvedLicenses", approvedLicenses.toSortedMap().toString())
+                outputs.file(reportFile)
+
+                doLast {
+                    val artifacts = embeddedConfiguration.get().incoming.artifacts.artifacts
+                    val rows = artifacts.map { artifact ->
+                        val component = artifact.id.componentIdentifier
+                        val key = when (component) {
+                            is ProjectComponentIdentifier -> component.projectPath
+                            is ModuleComponentIdentifier ->
+                                "${component.group}:${component.module}:${component.version}"
+                            else -> error("Unrecognized embedded component: $component")
+                        }
+                        val (license, licensePath) = approvedLicenses[key]
+                            ?: error("Embedded component $key needs a license review")
+                        val coordinate = when (component) {
+                            is ProjectComponentIdentifier ->
+                                "${rootProject.group}:${component.projectName}:${rootProject.version}"
+                            is ModuleComponentIdentifier -> key
+                            else -> error("Unrecognized embedded component: $component")
+                        }
+                        key to "$coordinate\tMETA-INF/jars/${artifact.file.name}\t$license\t$licensePath"
+                    }.sortedBy { it.first }
+                    check(rows.map { it.first }.toSet() == approvedLicenses.keys) {
+                        "Reviewed embedded components and resolved Fabric includes differ"
+                    }
+                    reportFile.get().asFile.apply {
+                        parentFile.mkdirs()
+                        writeText(
+                            "component\tbundled_path\tspdx_license\tlicense_path\n" +
+                                rows.joinToString("\n", postfix = "\n") { it.second },
+                            Charsets.UTF_8,
+                        )
+                    }
+                }
+            }
+
+            tasks.named<Jar>("jar") {
+                from(generateEmbeddedDependencyReport) {
+                    into("META-INF/stackframe")
+                }
+            }
+
+            val verifyEmbeddedDependencyReport by tasks.registering {
+                group = LifecycleBasePlugin.VERIFICATION_GROUP
+                description = "Checks the Fabric JAR contains every reported dependency and license."
+                val fabricJar = tasks.named<Jar>("jar")
+                dependsOn(fabricJar)
+                inputs.file(fabricJar.flatMap { it.archiveFile })
+                inputs.file(reportFile)
+
+                doLast {
+                    ZipFile(fabricJar.get().archiveFile.get().asFile).use { archive ->
+                        val reportEntry = archive.getEntry("META-INF/stackframe/dependencies.tsv")
+                            ?: error("Fabric JAR is missing its dependency inventory")
+                        val reportBytes = archive.getInputStream(reportEntry).use { it.readBytes() }
+                        check(reportBytes.contentEquals(reportFile.get().asFile.readBytes())) {
+                            "Fabric JAR dependency inventory differs from the generated report"
+                        }
+                        val lines = reportBytes.toString(Charsets.UTF_8).lines().dropLastWhile {
+                            it.isEmpty()
+                        }
+                        check(lines.firstOrNull() ==
+                            "component\tbundled_path\tspdx_license\tlicense_path") {
+                            "Fabric dependency inventory header is invalid"
+                        }
+                        check(lines.size == approvedLicenses.size + 1) {
+                            "Fabric dependency inventory does not list every reviewed component"
+                        }
+                        val reportedPaths = mutableSetOf<String>()
+                        lines.drop(1).forEach { line ->
+                            val fields = line.split('\t')
+                            check(fields.size == 4) { "Fabric dependency inventory row is invalid" }
+                            check(reportedPaths.add(fields[1])) {
+                                "Fabric dependency inventory repeats ${fields[1]}"
+                            }
+                            check(archive.getEntry(fields[1]) != null) {
+                                "Fabric JAR is missing reported dependency ${fields[1]}"
+                            }
+                            check(archive.getEntry(fields[3]) != null) {
+                                "Fabric JAR is missing reported license ${fields[3]}"
+                            }
+                        }
+                        val bundledPaths = archive.entries().asSequence()
+                            .map { it.name }
+                            .filter { it.startsWith("META-INF/jars/") && it.endsWith(".jar") }
+                            .toSet()
+                        check(bundledPaths == reportedPaths) {
+                            "Fabric JAR contains an unreported embedded JAR"
+                        }
+                    }
+                }
+            }
+            tasks.named("check") {
+                dependsOn(verifyEmbeddedDependencyReport)
+            }
+        }
+    }
 }
 
 val verifyModuleBoundaries by tasks.registering {
@@ -219,6 +339,13 @@ val verifyGradleWrapper by tasks.registering {
         }
         check(checksum.matches(Regex("[0-9a-f]{64}"))) {
             "Gradle wrapper must specify a SHA-256 distribution checksum."
+        }
+        val wrapperJar = rootProject.file("gradle/wrapper/gradle-wrapper.jar")
+        val wrapperDigest = HexFormat.of().formatHex(
+            MessageDigest.getInstance("SHA-256").digest(wrapperJar.readBytes()),
+        )
+        check(wrapperDigest == "497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7") {
+            "Gradle wrapper JAR differs from the validated repository baseline."
         }
     }
 }
