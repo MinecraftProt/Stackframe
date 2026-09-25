@@ -16,6 +16,8 @@ expected behavior.
    defines how support claims are earned.
 6. [Security and privacy](SECURITY_AND_PRIVACY.md) defines data boundaries.
 7. [Release process](RELEASES.md) defines version and publication rules.
+   [Dependency and supply-chain review](SUPPLY_CHAIN.md) defines the checks and
+   release triage path for build inputs and bundled components.
 8. [GitHub workflow](GITHUB_WORKFLOW.md) explains how work moves through issues,
    the project board, branches, and pull requests.
 9. [Parallel workstreams](WORKSTREAMS.md) assigns module and file ownership so

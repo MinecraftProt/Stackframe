@@ -27,6 +27,12 @@ reports can also be inspected directly:
 ./gradlew :stackframe-core:dependencies :stackframe-renderer:dependencies
 ```
 
+The Fabric `check` task also verifies the final JAR's embedded dependency and
+license inventory at `META-INF/stackframe/dependencies.tsv`. A standalone copy
+is generated at `stackframe-fabric/build/generated/supply-chain/dependencies.tsv`.
+See [Dependency and supply-chain review](SUPPLY_CHAIN.md) for update and
+vulnerability triage steps.
+
 ## Continuous integration
 
 GitHub Actions runs the exact command above for pull requests targeting `dev`
