@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MinecraftProt/Stackframe/blob/dev/docs/schemas/diagnostic-1.0.schema.json",
+  "title": "Stackframe structured diagnostic, major version 1",
+  "description": "Schema 1.0 field contract. Unknown optional properties are allowed for compatible minor versions; safety-sensitive tokens remain closed.",
+  "type": "object",
+  "required": ["schemaVersion", "observedAt", "diagnosticId", "correlationId", "root", "redactions", "omissions"],
+  "properties": {
+    "schemaVersion": {"type": "string", "pattern": "^1\\.[0-9]+$"},
+    "observedAt": {"type": "string", "description": "Caller-supplied UTC ISO-8601 Instant, including Java's extended-year form when applicable"},
+    "diagnosticId": {"type": "string"},
+    "correlationId": {"type": "string"},
+    "root": {"$ref": "#/$defs/diagnostic"},
+    "redactions": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/redaction"}}}},
+    "omissions": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/omission"}}}}
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "boundedList": {
+      "type": "object",
+      "required": ["items", "omittedCount"],
+      "properties": {
+        "items": {"type": "array"},
+        "omittedCount": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": true
+    },
+    "evidenceIds": {
+      "$ref": "#/$defs/boundedList",
+      "properties": {"items": {"items": {"type": "string"}}}
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["severity", "code", "title", "locations", "notes", "help", "trace", "evidence", "confidence", "children", "omissions"],
+      "properties": {
+        "severity": {"type": "string", "description": "Known 1.0 values: error, warning, note; unknown display values require generic presentation"},
+        "code": {"type": "string"},
+        "title": {"$ref": "#/$defs/catalogText"},
+        "locations": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/location"}}}},
+        "notes": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/note"}}}},
+        "help": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/help"}}}},
+        "trace": {"$ref": "#/$defs/trace"},
+        "evidence": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/evidence"}}}},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "children": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/relatedDiagnostic"}}}},
+        "omissions": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/omission"}}}}
+      },
+      "additionalProperties": true
+    },
+    "catalogText": {
+      "type": "object",
+      "required": ["key", "value"],
+      "properties": {"key": {"type": "string"}, "value": {"type": "string"}},
+      "additionalProperties": true
+    },
+    "displayText": {
+      "type": "object",
+      "required": ["value", "origin", "sensitivity", "disposition", "marker"],
+      "properties": {
+        "value": {"type": "string"},
+        "origin": {"type": "string"},
+        "sensitivity": {"type": "string", "enum": ["public", "server_sensitive", "personal", "secret", "world_data"]},
+        "disposition": {"type": "string", "enum": ["visible", "redacted", "generalized", "omitted"]},
+        "marker": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/marker"}]}
+      },
+      "additionalProperties": true
+    },
+    "marker": {
+      "type": "object",
+      "required": ["category"],
+      "properties": {"category": {"type": "string"}},
+      "additionalProperties": true
+    },
+    "location": {
+      "type": "object",
+      "required": ["id", "kind", "display", "position", "excerpt", "evidenceIds"],
+      "properties": {
+        "id": {"type": "string"},
+        "kind": {"type": "string"},
+        "display": {"$ref": "#/$defs/displayText"},
+        "position": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/range"}]},
+        "excerpt": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/excerpt"}]},
+        "evidenceIds": {"$ref": "#/$defs/evidenceIds"}
+      },
+      "additionalProperties": true
+    },
+    "excerpt": {
+      "type": "object",
+      "required": ["startLine", "lines", "labels"],
+      "properties": {
+        "startLine": {"type": "integer", "minimum": 1},
+        "lines": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/excerptLine"}}}},
+        "labels": {"$ref": "#/$defs/boundedList", "properties": {"items": {"items": {"$ref": "#/$defs/label"}}}}
+      },
+      "additionalProperties": true
+    },
+    "excerptLine": {
+      "type": "object",
+      "required": ["lineNumber", "text"],
+      "properties": {"lineNumber": {"type": "integer", "minimum": 1}, "text": {"$ref": "#/$defs/displayText"}},
+      "additionalProperties": true
+    },
+    "label": {
+      "type": "object",
+      "required": ["range", "style", "message", "evidenceIds"],
+      "properties": {
+        "range": {"$ref": "#/$defs/range"},
+        "style": {"type": "string"},
+        "message": {"$ref": "#/$defs/displayText"},
+        "evidenceIds": {"$ref": "#/$defs/evidenceIds"}
+      },
+      "additionalProperties": true
+    },
+    "range": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {"start": {"$ref": "#/$defs/position"}, "end": {"$ref": "#/$defs/position"}},
+      "additionalProperties": true
+    },
+    "position": {
+      "type": "object",
+      "required": ["line", "column"],
+      "properties": {"line": {"type": "integer", "minimum": 1}, "column": {"type": "integer", "minimum": 1}},
+      "additionalProperties": true
+    },
+    "note": {
+      "type": "object",
+      "required": ["kind", "text", "evidenceIds"],
+      "properties": {"kind": {"type": "string"}, "text": {"$ref": "#/$defs/displayText"}, "evidenceIds": {"$ref": "#/$defs/evidenceIds"}},
+      "additionalProperties": true
+    },
+    "help": {
+      "type": "object",
+      "required": ["text", "kind", "evidenceIds"],
+      "properties": {"text": {"$ref": "#/$defs/displayText"}, "kind": {"type": "string"}, "evidenceIds": {"$ref": "#/$defs/evidenceIds"}},
+      "additionalProperties": true
+    },
+    "trace": {
+      "type": "object",
+      "required": ["state", "totalFrames", "shownFrames", "omittedFrames", "omittedCauses", "destination", "recordId"],
+      "properties": {
+        "state": {"type": "string", "enum": ["preserved", "write_failed", "not_applicable"]},
+        "totalFrames": {"type": ["integer", "null"], "minimum": 0},
+        "shownFrames": {"type": "integer", "minimum": 0},
+        "omittedFrames": {"type": "integer", "minimum": 0},
+        "omittedCauses": {"type": "integer", "minimum": 0},
+        "destination": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/displayText"}]},
+        "recordId": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["id", "kind", "summary", "source"],
+      "properties": {
+        "id": {"type": "string"},
+        "kind": {"type": "string"},
+        "summary": {"$ref": "#/$defs/displayText"},
+        "source": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/displayText"}]}
+      },
+      "additionalProperties": true
+    },
+    "confidence": {
+      "type": "object",
+      "required": ["assessmentId", "classifierId", "evidenceIds", "policyId"],
+      "properties": {
+        "assessmentId": {"type": ["string", "null"]},
+        "classifierId": {"type": ["string", "null"]},
+        "evidenceIds": {"$ref": "#/$defs/evidenceIds"},
+        "policyId": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "relatedDiagnostic": {
+      "type": "object",
+      "required": ["relation", "diagnostic"],
+      "properties": {"relation": {"type": "string"}, "diagnostic": {"$ref": "#/$defs/diagnostic"}},
+      "additionalProperties": true
+    },
+    "omission": {
+      "type": "object",
+      "required": ["affectedPath", "omittedCount", "reason"],
+      "properties": {
+        "affectedPath": {"type": "string"},
+        "omittedCount": {"type": "integer", "minimum": 1},
+        "reason": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "redaction": {
+      "type": "object",
+      "required": ["marker", "transformation", "occurrenceCount"],
+      "properties": {
+        "marker": {"$ref": "#/$defs/marker"},
+        "transformation": {"type": "string", "enum": ["redacted", "generalized", "omitted"]},
+        "occurrenceCount": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": true
+    }
+  }
+}

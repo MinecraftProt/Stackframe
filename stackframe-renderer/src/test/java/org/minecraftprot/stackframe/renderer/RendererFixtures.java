@@ -345,6 +345,35 @@ final class RendererFixtures {
                 BoundedList.empty()));
     }
 
+    static DiagnosticDocument redactedLocation() {
+        var marker = new RedactionMarker("TOKEN");
+        var location = new Location(
+                new LocationId("secret"),
+                LocationKind.OTHER,
+                DisplayText.redacted(TextOrigin.EXTERNAL, Sensitivity.SECRET, marker),
+                Optional.empty(),
+                Optional.empty(),
+                BoundedList.empty());
+        var root = diagnostic(
+                Severity.ERROR,
+                "SF0001",
+                "protected location was rejected",
+                BoundedList.of(List.of(location)),
+                BoundedList.empty(),
+                BoundedList.empty(),
+                TraceSummary.notApplicable(),
+                BoundedList.empty(),
+                BoundedList.empty(),
+                BoundedList.empty());
+        return new DiagnosticDocument(
+                SchemaVersion.CURRENT,
+                new DiagnosticId("diag0004"),
+                new CorrelationId("ABC124"),
+                root,
+                BoundedList.of(List.of(new RedactionNotice(marker, TextDisposition.REDACTED, 1))),
+                BoundedList.empty());
+    }
+
     static DiagnosticDocument uncertainExcerpt() {
         var evidence = evidence("validated uncertain source", null);
         var label = new Label(
