@@ -174,7 +174,7 @@ stackframe-forge
   depends on core and renderer; Forge lifecycle and logging integration
 
 stackframe-fabric-client
-  planned; Fabric client lifecycle, crash capture, and in-game presentation
+  separate Fabric physical-client bootstrap; capture and views are planned
 
 stackframe-forge-client
   planned; Forge client adapter through the stable shared platform SPI

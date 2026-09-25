@@ -67,7 +67,7 @@ stackframe-core       loader-independent diagnostic model and pipeline
 stackframe-renderer   terminal, plain-text, and structured output
 stackframe-fabric     Fabric/Minecraft integration
 stackframe-forge      Forge/Minecraft integration after the shared SPI stabilizes
-stackframe-fabric-client  planned Fabric client integration and in-game view
+stackframe-fabric-client  separate Fabric client bootstrap; capture and view planned
 stackframe-forge-client   planned Forge client adapter after the shared SPI
 stackframe-testkit    fixtures, snapshots, and integration-test utilities
 ```

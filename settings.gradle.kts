@@ -20,5 +20,6 @@ include(
     "stackframe-core",
     "stackframe-renderer",
     "stackframe-fabric",
+    "stackframe-fabric-client",
     "stackframe-testkit",
 )

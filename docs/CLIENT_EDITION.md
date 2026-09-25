@@ -1,9 +1,10 @@
 # Client edition contract
 
-This document specifies the planned client edition for
-[issue #63](https://github.com/MinecraftProt/Stackframe/issues/63). It is a
-design contract, not a claim that a client artifact or any client compatibility
-row exists today. The terms **MUST**, **MUST NOT**, **SHOULD**, and **MAY** are
+This document specifies the client edition for
+[issue #63](https://github.com/MinecraftProt/Stackframe/issues/63). A separate
+Fabric client development bootstrap now exists, but it is not a released client
+artifact or a client compatibility claim. The terms **MUST**, **MUST NOT**,
+**SHOULD**, and **MAY** are
 normative. [ADR 005](decisions/005-client-edition-boundaries.md) records the
 choice. The shared [diagnostic model](DIAGNOSTIC_MODEL.md),
 [classifier policy](decisions/004-classifier-arbitration.md),

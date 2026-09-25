@@ -19,9 +19,10 @@ checks the wrapper JAR against its reviewed SHA-256, and CI runs the independent
 pinned Gradle wrapper-validation action before executing the JAR. Strict Gradle
 verification checks downloaded build and runtime artifacts against
 `gradle/verification-metadata.xml`; module lockfiles pin resolved versions. The
-only trusted generated artifact is Loom's exact local Minecraft server mapping,
-whose source download is verified and whose repository path is checked by the
-build. See [Building](BUILDING.md) for that exception's limits.
+only trusted generated artifacts are Loom's exact local Minecraft server and
+merged client mappings. Their source downloads are verified, their generated
+POMs are checksum-pinned, and their repository paths are checked by the build.
+See [Building](BUILDING.md) for that exception's limits.
 
 `stackframe-fabric:generateEmbeddedDependencyReport` resolves the Fabric
 `includeInternal` configuration and writes a sorted UTF-8 inventory to
@@ -31,9 +32,10 @@ names an embedded component, its path inside the JAR, its reviewed SPDX license,
 and the included license text. `verifyEmbeddedDependencyReport`, run by `check`,
 opens the final JAR and checks that each reported dependency and license exists.
 An added embedded component fails the build until its license is reviewed and
-added to the root build's allowlist. The inventory covers embedded components;
-Minecraft and Fabric Loader are supplied by the platform, not bundled by this
-artifact.
+added to the root build's allowlist. The same verification applies to the
+separately packaged Fabric client bootstrap. The inventories cover only embedded
+components. Minecraft and Fabric Loader are platform-provided rather than
+bundled by either artifact.
 
 CI grants only `contents: read` to the build job. The checkout does not persist
 credentials. Pull-request builds have no publication token or write permission.
