@@ -30,6 +30,8 @@ No branch name contains a person's name, username, or initials.
 - Foundation and Fabric MVP milestone exit criteria pass.
 - A clean checkout produces the artifact with the documented toolchain.
 - Dedicated-server tests cover every claimed support combination.
+- The public compatibility matrix records exact versions, test dates, evidence,
+  limitations, and freshness for every claimed combination.
 - Capture never swallows an injected original error.
 - Full traces and correlation IDs are recoverable.
 - Installation, configuration, privacy limitations, and known issues are clear.
@@ -83,8 +85,16 @@ Release automation should:
 4. Include the root `LICENSE`, identify Stackframe as `Apache-2.0`, and generate
    checksums, dependency/license data, and provenance.
 5. Produce release notes from reviewed issues and pull requests.
-6. Require explicit maintainer approval before external publication.
-7. Never grant publication credentials to pull-request workflows.
+6. For **each** downloadable artifact, record its filename, SHA-256, source
+   commit, applicable matrix row IDs, and a permalink to the exact
+   `docs/COMPATIBILITY.md` revision at the release tag's commit SHA. Use the
+   [release-entry template](compatibility/RELEASE_ENTRY_TEMPLATE.md); verify each
+   link and matching artifact/source revision before publication.
+7. Link build and runtime evidence for the tagged source revision. If an exact
+   row lacks qualifying evidence, publish it as `Unknown` or a narrower status,
+   never as `Supported`. Record open regressions and stale rows visibly.
+8. Require explicit maintainer approval before external publication.
+9. Never grant publication credentials to pull-request workflows.
 
 Partial publication is reported and recovered explicitly. Existing artifacts are
 not overwritten to hide a failed release.
@@ -98,7 +108,8 @@ Notes include:
 - configuration or structured-schema migration steps;
 - privacy or retention changes;
 - fixed compatibility problems;
-- known limitations and links to the compatibility matrix;
+- known limitations, regression issues, last-tested dates, and per-artifact links
+  to the exact compatibility matrix commit;
 - artifact checksums and source revision.
 
 ## Rollback

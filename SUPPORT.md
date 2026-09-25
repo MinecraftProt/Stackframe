@@ -3,6 +3,10 @@
 Stackframe is pre-alpha and has no usable mod artifact yet. Current support is
 limited to project design, contribution, and roadmap questions.
 
+Check the [current compatibility matrix](docs/COMPATIBILITY.md#current-public-matrix)
+before reporting an environment as supported. Its `Unknown` rows are untested,
+even when the development artifact builds or starts.
+
 ## Before opening an issue
 
 1. Search existing issues and the public roadmap.
@@ -23,7 +27,8 @@ limited to project design, contribution, and roadmap questions.
 
 Include exact Stackframe, Minecraft, Java, loader, and relevant mod versions.
 Also include output mode, operating system family, hosting panel or service
-manager, and whether output was redirected.
+manager, and whether output was redirected. If a matrix row already describes the
+combination, include its row ID and any linked regression issue.
 
 Prefer a sanitized support bundle when that feature exists. Until then, inspect
 every pasted line manually. Do not upload a complete server directory, world,

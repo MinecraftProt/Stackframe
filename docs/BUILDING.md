@@ -73,8 +73,9 @@ Successful startup prints:
 ```
 
 This smoke test does not change the compatibility status from **Unknown**. Support
-claims require the release evidence defined in
-[`COMPATIBILITY.md`](COMPATIBILITY.md).
+claims require exact, dated runtime evidence in the
+[current public matrix](COMPATIBILITY.md#current-public-matrix). The CI build and
+artifact packaging checks above are not runtime compatibility tests.
 
 ## Modules and artifact
 
