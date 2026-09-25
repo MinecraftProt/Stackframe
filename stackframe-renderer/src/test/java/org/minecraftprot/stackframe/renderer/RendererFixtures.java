@@ -345,6 +345,30 @@ final class RendererFixtures {
                 BoundedList.empty()));
     }
 
+    static DiagnosticDocument hostileLocationExcerptAndLabel(
+            String path, String sourceLine, String labelMessage) {
+        var range = new SourceRange(new SourcePosition(1, 1), new SourcePosition(1, 2));
+        var label = new Label(range, LabelStyle.PRIMARY, text(labelMessage),
+                BoundedList.empty());
+        var excerpt = new Excerpt(1,
+                BoundedList.of(List.of(new ExcerptLine(1, text(sourceLine)))),
+                BoundedList.of(List.of(label)));
+        var location = new Location(new LocationId("hostile"), LocationKind.SOURCE,
+                text(path), Optional.empty(), Optional.of(excerpt), BoundedList.empty());
+        return document(diagnostic(
+                Severity.WARNING,
+                "SF2003",
+                "source input needs review",
+                BoundedList.of(List.of(location)),
+                BoundedList.of(List.of(new Note(NoteKind.CONTEXT, text(labelMessage),
+                        BoundedList.empty()))),
+                BoundedList.empty(),
+                TraceSummary.notApplicable(),
+                BoundedList.empty(),
+                BoundedList.empty(),
+                BoundedList.empty()));
+    }
+
     static DiagnosticDocument redactedLocation() {
         var marker = new RedactionMarker("TOKEN");
         var location = new Location(
