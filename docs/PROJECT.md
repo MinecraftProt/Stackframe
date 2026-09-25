@@ -148,7 +148,9 @@ documented and testable. Raw debug output follows an explicit, separate policy.
 The renderer calculates layouts from display width rather than string length,
 supports nested causes, and has deterministic wrapping. ANSI styling is enabled
 only when supported or explicitly requested. `NO_COLOR` and the Stackframe
-configuration always take precedence over automatic detection.
+configuration always take precedence over automatic detection. Explicit ANSI
+configuration is an intentional override of `NO_COLOR`; automatic mode honors a
+nonempty `NO_COLOR` and falls back to plain when terminal support is uncertain.
 
 ### 7. Preserve
 

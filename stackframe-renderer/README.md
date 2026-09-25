@@ -24,10 +24,30 @@ classify throwables, read server files, or bypass redaction.
 
 ## Terminal API
 
-`DiagnosticRenderer` accepts only a completed `DiagnosticDocument`. Callers choose
-`OutputMode.PLAIN` or `OutputMode.ANSI`, a known width or the documented unknown
-width fallback, and the ambiguous-character width policy through `RenderOptions`.
-Selection and terminal detection remain platform-adapter responsibilities.
+`DiagnosticRenderer` accepts only a completed `DiagnosticDocument`. Callers pass
+the resolved `OutputMode.PLAIN` or `OutputMode.ANSI`, a known width or the
+documented unknown width fallback, and the ambiguous-character width policy
+through `RenderOptions`. `OutputModeSelector` resolves the configured
+`OutputPreference` (`AUTO`, `ANSI`, or `PLAIN`) before rendering.
+
+Explicit `PLAIN` always disables styling. Explicit `ANSI` always enables fixed
+SGR styling, even with `NO_COLOR`, redirected output, or CI; this is the deliberate
+override for an operator who knows the destination supports it. In `AUTO`, a
+nonempty `NO_COLOR`, `CLICOLOR=0`, a CI indicator, redirected output, `TERM=dumb`,
+or an unknown terminal selects plain. Automatic ANSI requires an interactive
+destination and a recognized terminal (`xterm`, `screen`, `tmux`, `rxvt`, `vt`,
+`linux`, `cygwin`, `konsole`, `alacritty`, `kitty`, `foot`, `wezterm`, or `ansi`),
+or a Windows Terminal, ANSICON, or enabled ConEmu signal. CI indicators include
+`CI`, `GITHUB_ACTIONS`, `GITLAB_CI`, `TF_BUILD`, `JENKINS_URL`,
+`TEAMCITY_VERSION`, `BUILDKITE`, and `CIRCLECI`.
+
+`TerminalCapabilities.forSystemOut()` uses `System.console()` as a conservative
+probe for direct standard output and snapshots only variables used by the policy.
+Adapters writing through a logger, file, or hosting panel must supply the actual
+destination's terminal status with `new TerminalCapabilities(isTerminal, env)`;
+an uncertain status should be `false`. Capability evidence is captured once per
+selection so output does not change halfway through a diagnostic. Fabric capture
+and configuration will call this selector when their issues add the output path.
 
 Rendering writes incrementally to an `Appendable`; `renderToString` is a bounded
 convenience. `RenderLimits` bounds UTF-8 output bytes, logical lines, and work.

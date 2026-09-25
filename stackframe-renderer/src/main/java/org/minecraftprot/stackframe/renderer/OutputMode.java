@@ -1,6 +1,6 @@
 package org.minecraftprot.stackframe.renderer;
 
-/** Explicit renderer presentation. Capability detection belongs to platform adapters. */
+/** Resolved renderer presentation after {@link OutputModeSelector} runs. */
 public enum OutputMode {
     PLAIN,
     ANSI
