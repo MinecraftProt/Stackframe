@@ -36,6 +36,10 @@ artifact.
 
 CI grants only `contents: read` to the build job. The checkout does not persist
 credentials. Pull-request builds have no publication token or write permission.
+The tag-only [release-artifact workflow](RELEASE_ARTIFACTS.md) keeps its build job
+read-only and gives only its separate attestation job OIDC and attestation write
+permissions. A signed attestation establishes source/build provenance, not
+vulnerability or license clearance.
 
 ## Reviewing updates
 

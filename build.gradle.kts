@@ -19,7 +19,13 @@ plugins {
 }
 
 group = "org.minecraftprot.stackframe"
-version = "0.1.0-SNAPSHOT"
+version = providers.gradleProperty("releaseVersion").orElse("0.1.0-SNAPSHOT").get()
+val releaseSourceRevision = providers.gradleProperty("releaseSourceRevision").orNull
+if (releaseSourceRevision != null) {
+    check(releaseSourceRevision.matches(Regex("[0-9a-f]{40}"))) {
+        "releaseSourceRevision must be a full lowercase Git commit SHA."
+    }
+}
 
 val productionConfigurations = setOf(
     "annotationProcessor",
@@ -84,6 +90,15 @@ allprojects {
     tasks.withType<AbstractArchiveTask>().configureEach {
         isPreserveFileTimestamps = false
         isReproducibleFileOrder = true
+    }
+
+    if (releaseSourceRevision != null) {
+        tasks.withType<Jar>().configureEach {
+            manifest.attributes(
+                "Implementation-Version" to project.version.toString(),
+                "Build-Revision" to releaseSourceRevision,
+            )
+        }
     }
 }
 

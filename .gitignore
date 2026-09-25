@@ -9,6 +9,8 @@ versions/
 *.class
 *.log
 *.hprof
+__pycache__/
+*.pyc
 
 .idea/
 *.iml
