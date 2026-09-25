@@ -2,8 +2,9 @@
 
 The build fails on an unapproved download, a changed wrapper JAR, an unlocked
 version, or an unreviewed dependency included in the Fabric artifact. These
-checks verify identity and reviewed license metadata. They do not determine
-whether a version has a known vulnerability.
+checks verify identity and reviewed license metadata. A separate pull-request
+dependency review checks introduced versions against GitHub advisories; it is
+not a substitute for reviewing the existing dependency baseline before release.
 
 ## Reproducible checks
 
@@ -36,6 +37,14 @@ artifact.
 
 CI grants only `contents: read` to the build job. The checkout does not persist
 credentials. Pull-request builds have no publication token or write permission.
+The pinned [dependency-review workflow](../.github/workflows/dependency-review.yml)
+runs for pull requests into `dev` with only `contents: read`. It blocks newly
+introduced dependencies with high or critical published advisories, while lower
+severity findings remain in the review output for triage. GitHub's dependency
+review API and advisory coverage determine what it can detect; an absent finding
+does not prove a dependency is safe or that every transitive component was
+resolved into the dependency graph. The check does not auto-upgrade packages or
+grant release credentials.
 The tag-only [release-artifact workflow](RELEASE_ARTIFACTS.md) keeps its build job
 read-only and gives only its separate attestation job OIDC and attestation write
 permissions. A signed attestation establishes source/build provenance, not
@@ -65,11 +74,12 @@ new distribution checksum, wrapper JAR review, and CI wrapper validation.
 
 Maintainers review the resolved dependency inventory, build plugins, and CI
 actions against [GitHub's Advisory Database](https://github.com/advisories) and
-any available repository Dependabot alerts before each release candidate. Verify
-that alerts are enabled in repository settings; this build does not run an
-automated vulnerability scanner, and Dependabot version-update PRs are not a
-substitute for one. If alerts are unavailable, record the manual advisory search
-and date in the release review.
+repository Dependabot alerts before each release candidate. The repository's
+vulnerability-alerts API returned enabled on 2026-09-25, with no open alerts at
+that time; verify the live setting and findings again for each release. The
+pull-request dependency review detects newly introduced advisories only. If
+alerts or dependency-graph coverage are unavailable, record the manual advisory
+search and date in the release review.
 
 For each finding, record its advisory ID, affected component and version,
 dependency path, affected artifact or build job, reachable behavior, severity,
