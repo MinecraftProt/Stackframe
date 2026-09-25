@@ -30,7 +30,9 @@ implemented behavior from contracts that still need integration evidence.
     namespace and privacy boundaries, and failure isolation.
 13. [Error correlation](CORRELATION.md) defines identity-based duplicate
     suppression, repeat summaries, and Fabric delivery boundaries.
-14. [Support bundle staging](SUPPORT_BUNDLES.md) defines bounded local export
+14. [Fabric configuration](CONFIGURATION.md) defines the versioned server
+    settings, strict validation, defaults, and migration policy.
+15. [Support bundle staging](SUPPORT_BUNDLES.md) defines bounded local export
     from completed diagnostics and the remaining operator-flow boundary.
 
 ## Operator help

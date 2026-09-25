@@ -149,6 +149,23 @@ class TraceRecorderTest {
     }
 
     @Test
+    void linkedTraceAncestorCannotRedirectRawRecordsOutsideTheChosenPath() throws IOException {
+        var outside = Files.createDirectory(temporaryDirectory.resolve("outside"));
+        var link = temporaryDirectory.resolve("linked");
+        try {
+            Files.createSymbolicLink(link, outside);
+        } catch (IOException | UnsupportedOperationException | SecurityException unavailable) {
+            return;
+        }
+
+        var record = new TraceRecorder(link.resolve("traces"))
+                .record(new IllegalStateException("private detail"));
+
+        assertEquals(TraceState.WRITE_FAILED, record.state());
+        assertFalse(Files.exists(outside.resolve("traces")));
+    }
+
+    @Test
     void theTraceSummaryCannotClaimAnIncorrectFrameCount() {
         var record = new TraceRecorder(temporaryDirectory.resolve("traces"))
                 .record(new IllegalStateException("failure"));

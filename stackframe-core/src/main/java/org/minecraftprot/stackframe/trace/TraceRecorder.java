@@ -34,6 +34,8 @@ import org.minecraftprot.stackframe.diagnostic.TraceState;
  * original platform log event flowing even when this recorder reports failure.
  */
 public final class TraceRecorder {
+    /** Marker allows automatic retention to distinguish Stackframe-owned files. */
+    public static final String FILE_HEADER = "Stackframe trace v1\n";
     private static final char[] BASE32 =
             "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
     private static final int ID_BYTES = 10;
@@ -181,8 +183,8 @@ public final class TraceRecorder {
     }
 
     private void prepareDirectory() throws IOException {
-        if (Files.isSymbolicLink(directory)) {
-            throw new IOException("trace directory must not be a symbolic link");
+        if (hasSymbolicComponent(directory)) {
+            throw new IOException("trace directory path must not contain a symbolic link");
         }
         if (Files.getFileAttributeView(directory, PosixFileAttributeView.class) != null) {
             Files.createDirectories(
@@ -192,11 +194,22 @@ public final class TraceRecorder {
         } else {
             Files.createDirectories(directory);
         }
-        if (Files.isSymbolicLink(directory)
+        if (hasSymbolicComponent(directory)
                 || !Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) {
             throw new IOException("trace directory is unavailable");
         }
         restrictAccess(directory, true);
+    }
+
+    private static boolean hasSymbolicComponent(Path path) {
+        var current = path.getRoot();
+        for (var part : path) {
+            current = current == null ? part : current.resolve(part);
+            if (Files.isSymbolicLink(current)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void createPrivateFile(Path path) throws IOException {
@@ -241,6 +254,7 @@ public final class TraceRecorder {
         var writer = new PrintWriter(Files.newBufferedWriter(
                 partial, StandardCharsets.UTF_8, StandardOpenOption.WRITE));
         try (writer) {
+            writer.print(FILE_HEADER);
             throwable.printStackTrace(writer);
             writer.flush();
         }

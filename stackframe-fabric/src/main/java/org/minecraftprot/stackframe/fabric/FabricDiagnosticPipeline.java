@@ -1,6 +1,9 @@
 package org.minecraftprot.stackframe.fabric;
 
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -17,6 +20,7 @@ import org.minecraftprot.stackframe.correlation.DiagnosticCorrelator.RepeatSumma
 import org.minecraftprot.stackframe.diagnostic.BoundedList;
 import org.minecraftprot.stackframe.diagnostic.ConfidenceReference;
 import org.minecraftprot.stackframe.diagnostic.Diagnostic;
+import org.minecraftprot.stackframe.diagnostic.DiagnosticCode;
 import org.minecraftprot.stackframe.diagnostic.DiagnosticDocument;
 import org.minecraftprot.stackframe.diagnostic.DiagnosticId;
 import org.minecraftprot.stackframe.diagnostic.SchemaVersion;
@@ -25,7 +29,9 @@ import org.minecraftprot.stackframe.diagnostic.registry.CanonicalDiagnosticRegis
 import org.minecraftprot.stackframe.renderer.DiagnosticRenderer;
 import org.minecraftprot.stackframe.renderer.RenderOptions;
 import org.minecraftprot.stackframe.renderer.RenderWidth;
+import org.minecraftprot.stackframe.fabric.config.StackframeConfiguration;
 import org.minecraftprot.stackframe.trace.TraceRecorder;
+import org.minecraftprot.stackframe.trace.TraceRetention;
 
 /**
  * Bounded handoff from Log4j's logging thread to the initial generic diagnostic
@@ -36,10 +42,14 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
     private static final long SHUTDOWN_WAIT_MILLIS = 2_000;
     private static final Logger DIAGNOSTIC_LOGGER =
             LogManager.getLogger("org.minecraftprot.stackframe.fabric.Diagnostic");
+    private static final DiagnosticCode GENERIC_CODE = new DiagnosticCode("SF0001");
 
     private final ArrayBlockingQueue<Observation> pending;
     private final TraceRecorder recorder;
     private final DiagnosticCorrelator correlator;
+    private final StackframeConfiguration configuration;
+    private final TraceRetention retention;
+    private final RenderOptions renderOptions;
     private final Consumer<String> output;
     private final Thread worker;
     private final AtomicLong accepted = new AtomicLong();
@@ -48,16 +58,28 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
     private final AtomicLong processingFailures = new AtomicLong();
     private final AtomicLong suppressed = new AtomicLong();
     private final AtomicLong repeatSummaries = new AtomicLong();
+    private final AtomicLong filtered = new AtomicLong();
     private volatile boolean accepting = true;
 
     public FabricDiagnosticPipeline() {
-        this(DiagnosticCorrelator.DEFAULT_CONFIG);
+        this(StackframeConfiguration.DEFAULT, Path.of(""));
     }
 
     public FabricDiagnosticPipeline(Config correlationConfig) {
         this(new TraceRecorder(TraceRecorder.defaultDirectory()),
                 FabricDiagnosticPipeline::logDiagnostic, DEFAULT_CAPACITY,
-                correlationConfig);
+                withCorrelationConfig(correlationConfig));
+    }
+
+    public FabricDiagnosticPipeline(StackframeConfiguration configuration, Path serverDirectory) {
+        this(configuration, serverDirectory, FabricDiagnosticPipeline::logDiagnostic);
+    }
+
+    FabricDiagnosticPipeline(
+            StackframeConfiguration configuration, Path serverDirectory,
+            Consumer<String> output) {
+        this(new TraceRecorder(resolveTraceDirectory(configuration, serverDirectory)),
+                output, DEFAULT_CAPACITY, configuration);
     }
 
     FabricDiagnosticPipeline(TraceRecorder recorder, PrintStream output, int capacity) {
@@ -66,22 +88,37 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
             if (output.checkError()) {
                 throw new IllegalStateException("diagnostic output failed");
             }
-        }, capacity, DiagnosticCorrelator.DEFAULT_CONFIG);
+        }, capacity, StackframeConfiguration.DEFAULT);
     }
 
     FabricDiagnosticPipeline(TraceRecorder recorder, Consumer<String> output, int capacity) {
-        this(recorder, output, capacity, DiagnosticCorrelator.DEFAULT_CONFIG);
+        this(recorder, output, capacity, StackframeConfiguration.DEFAULT);
     }
 
     FabricDiagnosticPipeline(
             TraceRecorder recorder, Consumer<String> output, int capacity,
             Config correlationConfig) {
-        if (recorder == null || output == null || capacity < 1) {
+        this(recorder, output, capacity, withCorrelationConfig(correlationConfig));
+    }
+
+    FabricDiagnosticPipeline(
+            TraceRecorder recorder, Consumer<String> output, int capacity,
+            StackframeConfiguration configuration) {
+        if (recorder == null || output == null || configuration == null || capacity < 1) {
             throw new IllegalArgumentException("recorder, output, and positive capacity are required");
         }
         this.recorder = recorder;
-        this.correlator = new DiagnosticCorrelator(correlationConfig);
+        this.configuration = configuration;
+        this.correlator = new DiagnosticCorrelator(configuration.deduplication());
+        this.retention = new TraceRetention(recorder.directory(), configuration.retention());
+        this.renderOptions = configuration.output() == StackframeConfiguration.Output.ANSI
+                ? RenderOptions.ansi(RenderWidth.unknown())
+                : RenderOptions.plain(RenderWidth.unknown());
         this.output = output;
+        if (configuration.retention().automatic()
+                && Files.exists(recorder.directory(), LinkOption.NOFOLLOW_LINKS)) {
+            publishRetention(retention.clean());
+        }
         pending = new ArrayBlockingQueue<>(capacity);
         worker = new Thread(this::run, "stackframe-diagnostic-worker");
         worker.setDaemon(true);
@@ -101,6 +138,10 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
         if (importance == null) {
             throw new IllegalArgumentException("importance must not be null");
         }
+        if (!configuration.includes(GENERIC_CODE)) {
+            filtered.incrementAndGet();
+            return;
+        }
         if (!accepting || !pending.offer(new Observation(throwable, importance))) {
             dropped.incrementAndGet();
             return;
@@ -111,7 +152,7 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
     public PipelineStats stats() {
         return new PipelineStats(
                 accepted.get(), processed.get(), dropped.get(), processingFailures.get(),
-                suppressed.get(), repeatSummaries.get());
+                suppressed.get(), repeatSummaries.get(), filtered.get());
     }
 
     private void run() {
@@ -141,6 +182,9 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
                 return;
             }
             var record = recorder.record(observation.throwable(), decision.correlationId());
+            if (record.file().isPresent() && configuration.retention().automatic()) {
+                publishRetention(retention.clean(record.file().orElseThrow()));
+            }
             var generic = CanonicalDiagnosticRegistry.snapshot().genericFallback();
             var notes = record.failure().isPresent()
                     ? BoundedList.of(List.of(record.failureNote()))
@@ -165,7 +209,7 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
                     BoundedList.empty(),
                     BoundedList.empty());
             var rendered = DiagnosticRenderer.renderToString(
-                    document, RenderOptions.plain(RenderWidth.unknown()));
+                    document, renderOptions);
             output.accept(rendered);
             processed.incrementAndGet();
         } catch (Throwable ignored) {
@@ -194,6 +238,38 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
         }
     }
 
+    private void publishRetention(TraceRetention.Result result) {
+        if (!result.failed()) {
+            return;
+        }
+        try {
+            output.accept("[Stackframe] trace retention could not complete ("
+                    + result.status() + "); inspect the trace directory.\n");
+        } catch (Throwable ignored) {
+            processingFailures.incrementAndGet();
+        }
+    }
+
+    private static StackframeConfiguration withCorrelationConfig(Config correlationConfig) {
+        var defaults = StackframeConfiguration.DEFAULT;
+        return new StackframeConfiguration(defaults.output(), defaults.traceDirectory(),
+                defaults.retention(), correlationConfig, defaults.includeGeneric(),
+                defaults.excludeGeneric());
+    }
+
+    private static Path resolveTraceDirectory(
+            StackframeConfiguration configuration, Path serverDirectory) {
+        if (configuration == null || serverDirectory == null) {
+            throw new IllegalArgumentException("configuration and serverDirectory are required");
+        }
+        var root = serverDirectory.toAbsolutePath().normalize();
+        var resolved = root.resolve(configuration.traceDirectory()).normalize();
+        if (!resolved.startsWith(root)) {
+            throw new IllegalArgumentException("trace directory must stay inside server directory");
+        }
+        return resolved;
+    }
+
     private static void logDiagnostic(String rendered) {
         // A single log event lets each existing appender serialize its own output.
         DIAGNOSTIC_LOGGER.error(rendered.stripTrailing());
@@ -217,7 +293,8 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
             long dropped,
             long processingFailures,
             long suppressed,
-            long repeatSummaries) {
+            long repeatSummaries,
+            long filtered) {
     }
 
     private record Observation(Throwable throwable, Importance importance) {

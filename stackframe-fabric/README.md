@@ -37,14 +37,18 @@ observer; Stackframe also has a defensive re-entry guard and counters.
 
 The observer only enqueues the `Throwable` and whether the event was `FATAL`.
 A bounded daemon worker correlates repeated observations by throwable object
-identity, writes one private raw trace under `logs/stackframe-traces/` for each
-ordinary window, and emits a plain, generic `SF0001` diagnostic with the same
+identity, writes one private raw trace under `logs/stackframe-traces/` by default
+for each ordinary window, and emits a generic `SF0001` diagnostic with the same
 correlation ID as one Log4j event. It publishes a compact count when repeats
 expire or the worker shuts down. `FATAL` events always emit a full diagnostic.
 Existing
 appenders choose the destination and serialize each complete event. The supplemental
-diagnostic omits exception messages because these are not yet redacted. If
-trace storage fails, the diagnostic says so and points back to the original
+diagnostic omits exception messages because only safe generic content is emitted
+on this path. Versioned [Fabric configuration](../docs/CONFIGURATION.md) controls
+plain or explicit ANSI output, trace location and opt-in bounded retention,
+`SF0001` filtering, and correlation bounds. If the file is invalid, supplemental
+capture is disabled with a location-aware error while original logging continues.
+If trace storage fails, the diagnostic says so and points back to the original
 server log. A full queue or shutdown deadline may omit a supplemental
 diagnostic, but the original event still reaches normal appenders. The worker
 drains queued events for up to two seconds at shutdown.
