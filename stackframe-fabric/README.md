@@ -36,8 +36,9 @@ own appender guard prevents recursive logging from repeatedly invoking the
 observer; Stackframe also has a defensive re-entry guard and counters.
 
 The observer only enqueues the `Throwable`. A bounded daemon worker writes a
-private raw trace under `logs/stackframe-traces/` and prints a plain, generic
-`SF0001` diagnostic with the correlation ID to stderr. The supplemental
+private raw trace under `logs/stackframe-traces/` and emits a plain, generic
+`SF0001` diagnostic with the correlation ID as one Log4j event. Existing
+appenders choose the destination and serialize each complete event. The supplemental
 diagnostic omits exception messages because these are not yet redacted. If
 trace storage fails, the diagnostic says so and points back to the original
 server log. A full queue or shutdown deadline may omit a supplemental

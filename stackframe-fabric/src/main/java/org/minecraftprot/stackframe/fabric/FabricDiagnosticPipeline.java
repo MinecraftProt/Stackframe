@@ -6,6 +6,9 @@ import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.minecraftprot.stackframe.diagnostic.BoundedList;
 import org.minecraftprot.stackframe.diagnostic.ConfidenceReference;
 import org.minecraftprot.stackframe.diagnostic.Diagnostic;
@@ -26,10 +29,12 @@ import org.minecraftprot.stackframe.trace.TraceRecorder;
 public final class FabricDiagnosticPipeline implements AutoCloseable {
     private static final int DEFAULT_CAPACITY = 128;
     private static final long SHUTDOWN_WAIT_MILLIS = 2_000;
+    private static final Logger DIAGNOSTIC_LOGGER =
+            LogManager.getLogger("org.minecraftprot.stackframe.fabric.Diagnostic");
 
     private final ArrayBlockingQueue<Throwable> pending;
     private final TraceRecorder recorder;
-    private final PrintStream output;
+    private final Consumer<String> output;
     private final Thread worker;
     private final AtomicLong accepted = new AtomicLong();
     private final AtomicLong processed = new AtomicLong();
@@ -38,10 +43,20 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
     private volatile boolean accepting = true;
 
     public FabricDiagnosticPipeline() {
-        this(new TraceRecorder(TraceRecorder.defaultDirectory()), System.err, DEFAULT_CAPACITY);
+        this(new TraceRecorder(TraceRecorder.defaultDirectory()),
+                FabricDiagnosticPipeline::logDiagnostic, DEFAULT_CAPACITY);
     }
 
     FabricDiagnosticPipeline(TraceRecorder recorder, PrintStream output, int capacity) {
+        this(recorder, rendered -> {
+            output.print(rendered);
+            if (output.checkError()) {
+                throw new IllegalStateException("diagnostic output failed");
+            }
+        }, capacity);
+    }
+
+    FabricDiagnosticPipeline(TraceRecorder recorder, Consumer<String> output, int capacity) {
         if (recorder == null || output == null || capacity < 1) {
             throw new IllegalArgumentException("recorder, output, and positive capacity are required");
         }
@@ -111,21 +126,22 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
                     BoundedList.empty());
             var rendered = DiagnosticRenderer.renderToString(
                     document, RenderOptions.plain(RenderWidth.unknown()));
-            synchronized (output) {
-                output.print(rendered);
-                output.flush();
-                if (output.checkError()) {
-                    processingFailures.incrementAndGet();
-                }
-            }
+            output.accept(rendered);
             processed.incrementAndGet();
         } catch (Throwable ignored) {
             processingFailures.incrementAndGet();
             // The original event has already continued through normal appenders.
-            synchronized (output) {
-                output.println("[Stackframe] diagnostic failed; inspect the original server log");
+            try {
+                output.accept("[Stackframe] diagnostic failed; inspect the original server log\n");
+            } catch (Throwable alsoIgnored) {
+                // The normal Log4j event still contains the original failure.
             }
         }
+    }
+
+    private static void logDiagnostic(String rendered) {
+        // A single log event lets each existing appender serialize its own output.
+        DIAGNOSTIC_LOGGER.error(rendered.stripTrailing());
     }
 
     @Override

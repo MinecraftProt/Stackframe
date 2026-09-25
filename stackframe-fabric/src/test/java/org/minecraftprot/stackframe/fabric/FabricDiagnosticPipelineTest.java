@@ -60,6 +60,23 @@ class FabricDiagnosticPipelineTest {
                 .contains("could not save the full trace"));
     }
 
+    @Test
+    void outputFailureStaysOnWorkerAndDoesNotPreventTracePreservation() throws Exception {
+        var traces = temp.resolve("traces");
+        var pipeline = new FabricDiagnosticPipeline(
+                new TraceRecorder(traces),
+                rendered -> { throw new IllegalStateException("output unavailable"); },
+                1);
+        pipeline.accept(new IllegalStateException("original detail"));
+        pipeline.close();
+
+        assertEquals(1, pipeline.stats().accepted());
+        assertEquals(1, pipeline.stats().processingFailures());
+        try (var files = Files.list(traces)) {
+            assertEquals(1, files.filter(path -> path.toString().endsWith(".trace")).count());
+        }
+    }
+
     private static boolean contains(Path path, String text) {
         try {
             return Files.readString(path).contains(text);
