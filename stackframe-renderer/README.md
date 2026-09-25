@@ -53,6 +53,12 @@ Rendering writes incrementally to an `Appendable`; `renderToString` is a bounded
 convenience. `RenderLimits` bounds UTF-8 output bytes, logical lines, and work.
 Crossing a bound throws `RenderLimitException` instead of silently dropping facts.
 
+`SupportBundle.plan(...)` stages selected completed diagnostics and caller-supplied,
+post-policy metadata as a bounded local ZIP. Its preview lists exact entry names,
+uncompressed sizes, time bounds, and aggregate redaction counts before export.
+The staging API has no operator command or network transport; see
+[`docs/SUPPORT_BUNDLES.md`](../docs/SUPPORT_BUNDLES.md) for its format and limits.
+
 Known widths target at most 100 columns. Unknown width targets 80 columns, widths
 from 40 through 79 use the narrow layout, and smaller widths use that layout on a
 best-effort basis. Indivisible identifiers, paths, quoted values, and other machine
