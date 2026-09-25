@@ -26,6 +26,8 @@ implemented behavior from contracts that still need integration evidence.
    and which contracts must land first.
 11. [Worker handoff](HANDOFF.md) defines the context required when work changes
    sessions or unlocks a dependent task.
+12. [Diagnostic extensions](EXTENSIONS.md) defines the public contribution API,
+    namespace and privacy boundaries, and failure isolation.
 
 ## Operator help
 
