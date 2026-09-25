@@ -34,7 +34,12 @@ text limits, exact omission paths and counts, and the UTF-8 document budget.
 Redacted and omitted `DisplayText` factories derive canonical typed markers
 without accepting protected originals. Redaction policy, throwable
 normalization, arbitration, trace storage, diagnostic-code allocation, and
-rendering remain separate provider contracts.
+rendering remain separate components.
+
+Package `org.minecraftprot.stackframe.trace` preserves original throwables in
+private local records and returns a correlation ID and a `TraceSummary` input.
+Its storage, recovery, and retention contract is in
+[`docs/FULL_TRACES.md`](../docs/FULL_TRACES.md).
 
 ## Diagnostic-code registry
 
