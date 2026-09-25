@@ -1,4 +1,4 @@
-# Compatibility policy
+# Compatibility policy and public matrix
 
 Stackframe must earn compatibility claims with repeatable evidence. Similar
 versions are not automatically treated as supported.
@@ -7,12 +7,12 @@ versions are not automatically treated as supported.
 
 | Status | Meaning |
 | --- | --- |
-| Supported | Covered by the release test matrix and eligible for fixes |
-| Tested | A specific combination passed documented tests |
-| Expected-compatible | Not fully tested; no known incompatible contract |
-| Degraded | Works with documented missing or altered behavior |
-| Unsupported | Outside policy or known not to work |
-| Unknown | No reliable compatibility evidence |
+| Supported | An exact released-artifact row passed the release test matrix, has linked evidence, and is eligible for fixes |
+| Tested | An exact combination passed documented tests, but is not a release support promise |
+| Expected-compatible | An exact combination has a dated, linked compatibility review but has not passed the full test matrix |
+| Degraded | An exact tested combination works with documented missing or altered behavior and a linked limitation |
+| Unsupported | Outside policy or known not to work; the matrix names which reason applies |
+| Unknown | No reliable compatibility evidence for this exact combination |
 
 `Expected-compatible` and `unknown` are not synonyms for supported.
 
@@ -63,30 +63,48 @@ server operator should not install an unnecessary mod. If implementation imports
 Fabric API, the artifact metadata must declare it and the exact version above
 becomes part of the tested combination.
 
-### Initial claim state
+## Current public matrix
 
-No executable Stackframe release or dedicated-server harness exists yet. The
-selected baseline is therefore **unknown**, not supported or tested. Selection
-means implementation work may build against the row; it does not mean operators
-should deploy Stackframe.
+**As checked on 2026-09-25, there are no published Stackframe releases or tags.**
+The `0.1.0-SNAPSHOT` Fabric JAR is a development bootstrap, not an operator
+release. A successful build or one startup smoke test does not test failure
+capture, fallback, trace preservation, or coexistence with other mods. No row is
+currently supported, tested, expected-compatible, or degraded.
 
-| Combination | Current status | Reason |
-| --- | --- | --- |
-| Exact selected baseline | Unknown | No Stackframe artifact or dedicated-server evidence exists |
-| Java 25 vendors other than the recorded test vendor | Unknown | JVM conformance is not a substitute for Stackframe evidence |
-| Java 25 vendor or patch combinations without evidence | Unknown | JVM conformance is not a substitute for Stackframe evidence |
-| Later Loader or Fabric API patch versions | Unknown | Patch compatibility must be demonstrated, not inferred |
-| Minecraft versions other than `26.2` | Unsupported | Minecraft compatibility is exact-version by default |
-| Java versions below 25 | Unsupported | The Minecraft 26.2 dedicated server requires Java 25 |
-| Minecraft snapshots or release candidates | Unsupported | Pre-releases are not release targets |
-| Client-only environments or failures | Unsupported by the server artifact | A separate Fabric-first client edition is planned in milestone M4 |
-| Forge or another loader | Unsupported | Fabric is the only initial loader |
+The candidate row below is a selected build target, not a support claim.
+`Never` means no qualifying runtime test has been recorded; `N/A (policy)` means
+the row is excluded by policy and has no last-tested date. Every positive claim
+must replace `Never` with a `YYYY-MM-DD` UTC test date and an immutable CI-run or
+reviewed manual-test link. Dates belong to the exact versions in the row, not a
+nearby version or a build-only run.
+
+| Row | Exact scope or missing input | Status | Last tested (UTC) | Evidence / limitation | Freshness |
+| --- | --- | --- | --- | --- | --- |
+| `FS-26.2-BASE` | Development `stackframe-fabric-0.1.0-SNAPSHOT`; Minecraft `26.2`; Java feature `25` (vendor and patch not yet selected for a runtime test); Fabric Loader `0.19.3`; Fabric API not declared; OS, output destination, and other mods not yet selected | **Unknown** | Never | [Build and smoke-test scope](BUILDING.md#continuous-integration); dedicated-server matrix [#17](https://github.com/MinecraftProt/Stackframe/issues/17) still required | **No runtime evidence** |
+| `FS-JAVA-VENDOR` | Any exact Java 25 vendor or patch not covered by a dated server row | **Unknown** | Never | Conformance alone does not prove Stackframe behavior | **No runtime evidence** |
+| `FS-LOADER-PATCH` | Fabric Loader versions other than `0.19.3`, or Fabric API versions if later required | **Unknown** | Never | Dependency patches need their own exact evidence | **No runtime evidence** |
+| `FS-OTHER-MC` | Minecraft versions other than `26.2`, including snapshots and release candidates | **Unsupported (policy)** | N/A (policy) | Exact-version policy; no second platform artifact | **Policy** |
+| `FS-OLD-JAVA` | Java feature versions below `25` with Minecraft `26.2` | **Unsupported (policy)** | N/A (policy) | Minecraft `26.2` requires Java 25 | **Policy** |
+| `FORGE-SERVER` | Any Forge version; no Forge server artifact exists | **Unsupported (policy)** | N/A (policy) | Forge adapter [#22](https://github.com/MinecraftProt/Stackframe/issues/22) is planned | **Policy** |
+| `CLIENT` | Client-only failures with the server artifact | **Unsupported (policy)** | N/A (policy) | Client compatibility requires a separate artifact and matrix | **Policy** |
+
+Runtime coverage is still absent for the following destinations and mod
+combinations. These rows inherit the candidate baseline above; their unspecified
+versions are explicit gaps, not wildcard support claims.
+
+| Row | Destination or combination | Status | Last tested (UTC) | Evidence / limitation | Freshness |
+| --- | --- | --- | --- | --- | --- |
+| `OUT-TERMINAL` | Interactive terminal, exact terminal and OS versions not recorded | **Unknown** | Never | Rendering unit tests do not prove server console behavior; [#16](https://github.com/MinecraftProt/Stackframe/issues/16) | **No runtime evidence** |
+| `OUT-REDIRECTED` | Redirected file or CI log, exact environment not recorded | **Unknown** | Never | Original error and plain-output coexistence need runtime tests; [#16](https://github.com/MinecraftProt/Stackframe/issues/16) | **No runtime evidence** |
+| `OUT-HOSTING` | Hosting panel, container, or service manager, exact product/version not recorded | **Unknown** | Never | No panel or service evidence; [#16](https://github.com/MinecraftProt/Stackframe/issues/16) | **No runtime evidence** |
+| `MOD-COMBINATIONS` | Logging, crash, performance, permission, world, or extension mods; exact mod/version pairs not recorded | **Unknown** | Never | Representative combinations need minimal reproducible tests; [#24](https://github.com/MinecraftProt/Stackframe/issues/24) | **No runtime evidence** |
 
 An exact row becomes **tested** only after its evidence is recorded. It becomes
-**supported** only when a Stackframe release includes that row in its release
-matrix and maintainers accept fixes for it. Untested Java 25 vendor changes and
-accepted dependency patches may be marked **expected-compatible** after build and
-startup review, but that status never replaces dedicated-server tests.
+**supported** only when a Stackframe release includes that row in its immutable
+release matrix and maintainers accept fixes for it. Untested Java 25 vendor
+changes and accepted dependency patches may be **expected-compatible** after a
+dated, linked build and startup review, but that status never replaces the full
+dedicated-server matrix.
 
 ## Loader policy
 
@@ -157,11 +175,51 @@ mod, or an unresolved interaction.
 
 ## Claim lifecycle
 
-Every matrix entry includes an evidence source and last-tested date. A claim
-becomes stale when a relevant Stackframe, loader, Minecraft, Java, or other-mod
-version changes. Stale entries are visibly downgraded until retested.
+For each positive or degraded row, record the exact Stackframe artifact name,
+version, source revision, and checksum; Minecraft version; Java vendor and patch;
+loader and API versions; operating-system version and architecture; output mode,
+terminal, CI, panel, or service-manager product/version; and every other mod and
+version in the tested combination. Use `none` for an absent component. A missing
+value is `not recorded`, never a wildcard. Keep a stable row ID so a regression
+issue can identify the affected combination.
 
-Release notes link the matrix revision used for that artifact.
+The row also records a `YYYY-MM-DD` UTC last-tested date, an immutable CI run
+or reviewed manual-test report, the test scenarios and outcomes, linked
+limitations/regressions, status, and freshness. A build-only CI run proves the
+build, not server compatibility. Manual evidence must give sanitized reproduction
+steps and the exact artifact and environment. **Expected-compatible** rows still
+show `Never` for tests they did not run and include a separate dated review link;
+they cannot be promoted from silence or a version range.
+
+`Current` freshness requires that the evidence still matches every relevant
+version and behavior in the row and is at most 90 days old. Mark a row **Stale**
+as soon as any relevant artifact, Minecraft, Java patch/vendor, loader, API,
+operating system, terminal/host, configuration, or other-mod version changes;
+the tested behavior changes; its evidence link becomes unavailable; or its last
+runtime test exceeds 90 days. A previously positive row is then shown as
+**Unknown (stale; formerly tested/supported/expected-compatible/degraded)**
+until retested. Keep its old evidence, date, and limitation link visible so the
+reason for the downgrade can be audited. An unsupported policy row stays
+unsupported until the policy and implementation change.
+
+If a regression is reproducible, link its issue from the affected row, identify
+the exact failing versions and scenario, and change the current status to
+**Degraded**, **Unsupported**, or **Unknown** according to observed behavior.
+Do not leave a supported claim in place solely because an older CI run passed.
+The immutable matrix revision used by a past release remains historical; the
+current matrix shows later regressions and staleness.
+
+### Release-to-matrix link
+
+The live table above changes as evidence changes. For every published binary,
+the release page must list that artifact's filename and SHA-256, source commit,
+relevant row IDs, and a **commit-SHA permalink** to the exact
+`docs/COMPATIBILITY.md` revision included in the release tag. A `dev`, `main`, or
+moving branch link is insufficient. The [release-entry template](compatibility/RELEASE_ENTRY_TEMPLATE.md)
+provides the per-artifact table. Build and runtime evidence for the tagged source
+revision must also be linked before publication; otherwise the artifact cannot
+claim `Supported`. If an artifact has no supported row, the release page says so
+explicitly. Later edits to this live matrix do not rewrite the release's claim.
 
 ## Upgrade and deprecation policy
 

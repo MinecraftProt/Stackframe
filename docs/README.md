@@ -12,7 +12,8 @@ expected behavior.
 3. [Diagnostic model](DIAGNOSTIC_MODEL.md) defines the immutable,
    loader-independent contract shared by the pipeline and renderers.
 4. [Diagnostic style](DIAGNOSTIC_STYLE.md) defines what readable output means.
-5. [Compatibility](COMPATIBILITY.md) defines how support claims are earned.
+5. [Compatibility](COMPATIBILITY.md) publishes the current evidence matrix and
+   defines how support claims are earned.
 6. [Security and privacy](SECURITY_AND_PRIVACY.md) defines data boundaries.
 7. [Release process](RELEASES.md) defines version and publication rules.
 8. [GitHub workflow](GITHUB_WORKFLOW.md) explains how work moves through issues,

@@ -40,8 +40,9 @@ claim that a mod is responsible without evidence.
 
 Stackframe is in the design and bootstrap phase. The selected foundation baseline
 is a Minecraft 26.2 dedicated Fabric server on Java 25; this is not yet a support
-claim. See the [compatibility policy](docs/COMPATIBILITY.md) for exact pins and
-evidence requirements. Stackframe is not ready for production use yet.
+claim. See the [public compatibility matrix](docs/COMPATIBILITY.md#current-public-matrix)
+for the current status, exact pins, and evidence gaps. Stackframe is not ready
+for production use yet.
 
 ## Development
 
