@@ -160,8 +160,9 @@ private keys, account/player identifiers, chat, non-public addresses, private
 path segments, and world data. Keep the replacement marker visible, such as
 `<redacted:token>`, so readers know data was removed. Never attach a whole
 server directory, raw trace, unsanitized `latest.log`, world save, or arbitrary
-configuration file. A sanitized support bundle is planned in #36; it is not
-currently available. Suspected secret exposure or another vulnerability
+configuration file. The [support bundle staging API](SUPPORT_BUNDLES.md) is not
+yet connected to an operator command; do not treat it as an automatic sanitizer
+for copied logs or traces. Suspected secret exposure or another vulnerability
 belongs in a [private security advisory](../SECURITY.md), not a public issue.
 
 ## Safe checks and recovery

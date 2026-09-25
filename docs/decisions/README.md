@@ -17,6 +17,7 @@ they do not replace implementation acceptance criteria.
 | [007](007-evidence-based-compatibility-matrix.md) | Proposed | Pin evidence-based compatibility claims to each release |
 | [008](008-loader-neutral-extension-api.md) | Proposed | Loader-neutral diagnostic extension API with bounded safe output |
 | [009](009-error-correlation.md) | Proposed | Identity-based bounded error correlation and repeat summaries |
+| [011](011-sanitized-support-bundle-staging.md) | Proposed | Stage sanitized support bundles from completed diagnostics |
 
 Create an ADR when changing:
 

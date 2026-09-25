@@ -177,6 +177,11 @@ Bundles are local, explicit, bounded, and previewable. The operator must see:
 
 World data, player data, credentials, and arbitrary configuration files are
 excluded by default. Partial bundles are removed or clearly marked after failure.
+The current [bundle staging API](SUPPORT_BUNDLES.md) only accepts selected
+completed diagnostics and post-policy metadata, freezes a file-list preview,
+and excludes raw traces entirely. It does not yet expose an operator command or
+an optional sanitized full-trace mode. Those remain required before claiming a
+complete support-bundle workflow.
 
 ## External communication
 
