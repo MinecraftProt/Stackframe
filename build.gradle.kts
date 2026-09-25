@@ -166,11 +166,18 @@ val verifyModuleBoundaries by tasks.registering {
             module.configurations.forEach { configuration ->
                 configuration.dependencies.withType(ProjectDependency::class.java).forEach { dependency ->
                     val target = dependency.path.substringAfterLast(':')
-                    check(target != "stackframe-testkit" || module.name == "stackframe-testkit") {
-                        "Production module ${module.path} must not depend on stackframe-testkit " +
-                            "(${configuration.name})."
+                    val testkitForTests = target == "stackframe-testkit" &&
+                        configuration.name in setOf(
+                            "testImplementation",
+                            "testCompileOnly",
+                            "testRuntimeOnly",
+                        )
+                    check(target != "stackframe-testkit" ||
+                        module.name == "stackframe-testkit" || testkitForTests) {
+                        "Production module ${module.path} may depend on stackframe-testkit " +
+                            "only in test configurations (${configuration.name})."
                     }
-                    check(target in allowedProjects) {
+                    check(target in allowedProjects || testkitForTests) {
                         "${module.path} must not depend on ${dependency.path} " +
                             "(${configuration.name})."
                     }

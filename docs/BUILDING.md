@@ -83,10 +83,11 @@ claims require the release evidence defined in
 | `stackframe-core` | JDK only |
 | `stackframe-renderer` | `stackframe-core` and ICU4J 78.3 |
 | `stackframe-fabric` | core, renderer, ICU4J runtime, Minecraft, and Fabric Loader |
-| `stackframe-testkit` | none in the initial scaffold |
+| `stackframe-testkit` | JDK only; shared test fixtures and snapshot helper |
 
-Production modules cannot depend on testkit. Forge and client modules are not
-part of this server foundation build.
+Production modules can use testkit only from test configurations; it is excluded
+from production artifacts. Forge and client modules are not part of this server
+foundation build.
 
 The development Fabric server artifact is:
 

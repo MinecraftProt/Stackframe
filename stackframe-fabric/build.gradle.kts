@@ -14,6 +14,7 @@ dependencies {
     add("include", project(":stackframe-core"))
     add("include", project(":stackframe-renderer"))
     add("include", libs.icu4j)
+    testImplementation(project(":stackframe-testkit"))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
