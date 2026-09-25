@@ -31,11 +31,12 @@ class FabricDiagnosticPipelineTest {
         assertEquals(0, pipeline.stats().dropped());
         var rendered = output.toString(StandardCharsets.UTF_8);
         assertEquals(2, rendered.split("SF0001", -1).length - 1);
+        assertFalse(rendered.contains("could not save the full trace"), rendered);
         assertFalse(rendered.contains("startup details"));
         assertFalse(rendered.contains("runtime details"));
         try (var files = Files.list(traces)) {
             var complete = files.filter(path -> path.toString().endsWith(".trace")).toList();
-            assertEquals(2, complete.size());
+            assertEquals(2, complete.size(), rendered);
             assertTrue(complete.stream().anyMatch(path -> contains(path, "startup details")));
             assertTrue(complete.stream().anyMatch(path -> contains(path, "runtime details")));
         }
