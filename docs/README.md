@@ -28,6 +28,8 @@ implemented behavior from contracts that still need integration evidence.
    sessions or unlocks a dependent task.
 12. [Diagnostic extensions](EXTENSIONS.md) defines the public contribution API,
     namespace and privacy boundaries, and failure isolation.
+13. [Error correlation](CORRELATION.md) defines identity-based duplicate
+    suppression, repeat summaries, and Fabric delivery boundaries.
 
 ## Operator help
 

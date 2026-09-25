@@ -1,10 +1,13 @@
 package org.minecraftprot.stackframe.fabric;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,8 +18,13 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.minecraftprot.stackframe.correlation.DiagnosticCorrelator.Importance;
+import org.minecraftprot.stackframe.trace.TraceRecorder;
 
 class Log4jFailureCaptureTest {
+    @TempDir Path temporaryDirectory;
+
     @Test
     void earlyAndRuntimeFailuresReachSinkOnceWhileOriginalLogsStayIntact() {
         var original = new CollectingAppender("original");
@@ -41,6 +49,57 @@ class Log4jFailureCaptureTest {
             context.getLogger("fixture.server").error("after shutdown", new Exception());
             assertEquals(5, original.events.size());
             assertEquals(2, captured.size());
+        }
+    }
+
+    @Test
+    void fatalEventsReachThePipelineAsCriticalWithoutConsumingOriginalLogs() {
+        var original = new CollectingAppender("original-fatal");
+        try (var context = configuredContext("fatal-priority", original)) {
+            var importance = new ArrayList<Importance>();
+            try (var observer = Log4jFailureCapture.installWithImportance(context,
+                    (throwable, priority) -> importance.add(priority))) {
+                var failure = new IllegalStateException("fatal");
+                context.getLogger("fixture.fatal").error("ordinary", failure);
+                context.getLogger("fixture.fatal").fatal("critical", failure);
+
+                assertEquals(List.of(Importance.ORDINARY, Importance.CRITICAL), importance);
+                assertEquals(2, original.events.size());
+                assertSame(failure, original.events.getFirst().getThrown());
+                assertSame(failure, original.events.getLast().getThrown());
+                assertEquals(2, observer.stats().delivered());
+            }
+        }
+    }
+
+    @Test
+    void repeatedLogObservationsKeepOriginalEventsAndPublishOneSummary() throws Exception {
+        var original = new CollectingAppender("original-correlated");
+        var traceDirectory = temporaryDirectory.resolve("traces");
+        var output = new StringBuilder();
+        try (var context = configuredContext("correlated-events", original);
+                var pipeline = new FabricDiagnosticPipeline(
+                        new TraceRecorder(traceDirectory),
+                        rendered -> output.append(rendered), 4);
+                var observer = Log4jFailureCapture.installWithImportance(
+                        context, pipeline::accept)) {
+            var failure = new IllegalStateException("private failure detail");
+            var logger = context.getLogger("fixture.correlated");
+            logger.error("first observation", failure);
+            logger.error("second observation", failure);
+            logger.fatal("fatal observation", failure);
+            observer.close();
+            pipeline.close();
+
+            assertEquals(3, original.events.size());
+            assertTrue(original.events.stream().allMatch(event -> event.getThrown() == failure));
+            assertEquals(3, observer.stats().delivered());
+            assertEquals(2, output.toString().split("SF0001", -1).length - 1);
+            assertTrue(output.toString().contains("observed 1 more time"));
+            assertFalse(output.toString().contains("private failure detail"));
+            try (var files = Files.list(traceDirectory)) {
+                assertEquals(2, files.filter(path -> path.toString().endsWith(".trace")).count());
+            }
         }
     }
 

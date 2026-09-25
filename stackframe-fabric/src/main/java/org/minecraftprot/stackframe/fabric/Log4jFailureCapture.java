@@ -6,6 +6,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
@@ -14,6 +15,7 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.AbstractConfiguration;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.minecraftprot.stackframe.correlation.DiagnosticCorrelator.Importance;
 
 /**
  * Observes throwable-bearing ERROR/FATAL events without consuming or changing
@@ -24,14 +26,15 @@ public final class Log4jFailureCapture implements AutoCloseable {
     private static final String APPENDER_NAME = "StackframeFailureObserver";
 
     private final LoggerContext context;
-    private final Consumer<Throwable> sink;
+    private final BiConsumer<Throwable, Importance> sink;
     private final Counters counters = new Counters();
     private final PropertyChangeListener configurationListener;
     private final Map<Configuration, ObserverAppender> attached = new IdentityHashMap<>();
     private final AtomicLong installationFailures = new AtomicLong();
     private volatile boolean closed;
 
-    private Log4jFailureCapture(LoggerContext context, Consumer<Throwable> sink) {
+    private Log4jFailureCapture(LoggerContext context,
+            BiConsumer<Throwable, Importance> sink) {
         this.context = Objects.requireNonNull(context, "context");
         this.sink = Objects.requireNonNull(sink, "sink");
         configurationListener = this::onConfigurationChanged;
@@ -39,6 +42,13 @@ public final class Log4jFailureCapture implements AutoCloseable {
 
     public static Log4jFailureCapture install(
             LoggerContext context, Consumer<Throwable> sink) {
+        Objects.requireNonNull(sink, "sink");
+        return installWithImportance(
+                context, (throwable, importance) -> sink.accept(throwable));
+    }
+
+    public static Log4jFailureCapture installWithImportance(
+            LoggerContext context, BiConsumer<Throwable, Importance> sink) {
         var capture = new Log4jFailureCapture(context, sink);
         try {
             context.addPropertyChangeListener(capture.configurationListener);
@@ -179,11 +189,11 @@ public final class Log4jFailureCapture implements AutoCloseable {
     }
 
     private static final class ObserverAppender extends AbstractAppender {
-        private final Consumer<Throwable> sink;
+        private final BiConsumer<Throwable, Importance> sink;
         private final Counters counters;
         private final ThreadLocal<Boolean> active = ThreadLocal.withInitial(() -> false);
 
-        private ObserverAppender(Consumer<Throwable> sink, Counters counters) {
+        private ObserverAppender(BiConsumer<Throwable, Importance> sink, Counters counters) {
             super(APPENDER_NAME, null, null, true);
             this.sink = sink;
             this.counters = counters;
@@ -205,7 +215,8 @@ public final class Log4jFailureCapture implements AutoCloseable {
                                 && loggerName.startsWith("org.minecraftprot.stackframe"))) {
                     return;
                 }
-                sink.accept(throwable);
+                sink.accept(throwable, event.getLevel() == Level.FATAL
+                        ? Importance.CRITICAL : Importance.ORDINARY);
                 counters.delivered.incrementAndGet();
             } catch (Throwable ignored) {
                 // A failed observer must not prevent the remaining original appenders.

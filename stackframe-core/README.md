@@ -41,6 +41,12 @@ private local records and returns a correlation ID and a `TraceSummary` input.
 Its storage, recovery, and retention contract is in
 [`docs/FULL_TRACES.md`](../docs/FULL_TRACES.md).
 
+Package `org.minecraftprot.stackframe.correlation` groups repeated observations
+of one source throwable by reference identity within a fixed, bounded window.
+It returns exact repeat summaries, bypasses suppression for critical paths, and
+never suppresses the original platform event. The contract and Fabric
+integration are in [`docs/CORRELATION.md`](../docs/CORRELATION.md).
+
 ## Diagnostic-code registry
 
 Package `org.minecraftprot.stackframe.diagnostic.registry` owns accepted

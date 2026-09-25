@@ -129,6 +129,26 @@ class TraceRecorderTest {
     }
 
     @Test
+    void callerSelectedIdMatchesThePublishedTraceAndCannotOverwriteIt() throws IOException {
+        var recorder = new TraceRecorder(temporaryDirectory.resolve("traces"));
+        var id = recorder.newCorrelationId();
+        var first = recorder.record(new IllegalStateException("first failure"), id);
+
+        assertEquals(TraceState.PRESERVED, first.state());
+        assertEquals(id, first.correlationId());
+        assertEquals(id.value() + ".trace", first.file().orElseThrow().getFileName().toString());
+        var collision = recorder.record(new IllegalStateException("second failure"), id);
+        assertEquals(TraceState.WRITE_FAILED, collision.state());
+        assertEquals(id, collision.correlationId());
+        assertEquals(Optional.of(TraceWriteFailure.IDENTIFIER_EXHAUSTED), collision.failure());
+        assertTrue(Files.readString(first.file().orElseThrow()).contains("first failure"));
+        assertFalse(Files.readString(first.file().orElseThrow()).contains("second failure"));
+        try (var files = Files.list(recorder.directory())) {
+            assertEquals(1, files.count());
+        }
+    }
+
+    @Test
     void theTraceSummaryCannotClaimAnIncorrectFrameCount() {
         var record = new TraceRecorder(temporaryDirectory.resolve("traces"))
                 .record(new IllegalStateException("failure"));

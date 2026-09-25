@@ -35,9 +35,13 @@ observer failure leaves the original Log4j event on its normal path. Log4j's
 own appender guard prevents recursive logging from repeatedly invoking the
 observer; Stackframe also has a defensive re-entry guard and counters.
 
-The observer only enqueues the `Throwable`. A bounded daemon worker writes a
-private raw trace under `logs/stackframe-traces/` and emits a plain, generic
-`SF0001` diagnostic with the correlation ID as one Log4j event. Existing
+The observer only enqueues the `Throwable` and whether the event was `FATAL`.
+A bounded daemon worker correlates repeated observations by throwable object
+identity, writes one private raw trace under `logs/stackframe-traces/` for each
+ordinary window, and emits a plain, generic `SF0001` diagnostic with the same
+correlation ID as one Log4j event. It publishes a compact count when repeats
+expire or the worker shuts down. `FATAL` events always emit a full diagnostic.
+Existing
 appenders choose the destination and serialize each complete event. The supplemental
 diagnostic omits exception messages because these are not yet redacted. If
 trace storage fails, the diagnostic says so and points back to the original
