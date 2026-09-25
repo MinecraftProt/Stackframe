@@ -3,6 +3,7 @@ package org.minecraftprot.stackframe.diagnostic;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import org.minecraftprot.stackframe.redaction.RedactionPolicy;
 
 /**
  * Sanitized post-policy text safe to pass to renderers. Redacted and omitted
@@ -29,6 +30,12 @@ public final class DisplayText {
         this.sensitivity = Validation.required(sensitivity, "$.displayText.sensitivity");
         this.disposition = Validation.required(disposition, "$.displayText.disposition");
         this.marker = Validation.optional(marker, "$.displayText.marker");
+        if ((disposition == TextDisposition.VISIBLE
+                || disposition == TextDisposition.GENERALIZED)
+                && RedactionPolicy.containsBuiltInSensitiveData(this.value)) {
+            throw new RedactionValidationException(
+                    "$.displayText.value", "known sensitive content requires redaction");
+        }
         if (disposition == TextDisposition.VISIBLE) {
             if (sensitivity != Sensitivity.PUBLIC) {
                 throw new RedactionValidationException(

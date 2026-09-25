@@ -53,6 +53,19 @@ class TextAndRedactionTest {
                 TextOrigin.EXTERNAL, Sensitivity.SECRET, null));
     }
 
+    @Test
+    void completedVisibleAndGeneralizedTextRejectKnownSensitiveForms() {
+        assertThrows(RedactionValidationException.class,
+                () -> DisplayText.visible("password=guess-me", TextOrigin.EXTERNAL));
+        assertThrows(RedactionValidationException.class,
+                () -> DisplayText.visible("https://private.example.invalid/path",
+                        TextOrigin.GENERATED));
+        assertThrows(RedactionValidationException.class,
+                () -> DisplayText.generalized("C:\\Users\\alice\\secret.txt",
+                        TextOrigin.EXTERNAL, Sensitivity.SERVER_SENSITIVE,
+                        new RedactionMarker("PATH")));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"\u001B", "\r", "\t", "\u0000", "\u007F", "\u0085", "\u2028",
             "\u2029", "\u202E", "\u2066"})

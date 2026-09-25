@@ -85,6 +85,29 @@ There is no automatic screenshot, clipboard read, telemetry, or upload.
 
 ## Redaction rules
 
+- Producers convert bounded `CandidateText` with the core `RedactionPolicy`
+  before building a `DiagnosticDocument`. The same completed document is the
+  only input to plain, ANSI, JSON, and NDJSON renderers. A renderer does not
+  decide whether a value is safe. The current Fabric generic fallback publishes
+  only catalog-generated text and trace status; it does not copy exception
+  messages or frames into its diagnostic.
+- `UNTRUSTED_MESSAGE`, `LABEL`, and `EXCERPT` fields are omitted in full by
+  default, even when no known pattern is found. `WORLD_DATA` is omitted. A
+  producer may use `VERIFIED_PUBLIC` or `VERIFIED_IDENTIFIER` only after
+  validating provenance and the field's purpose; these are not escape hatches
+  for free-form exception or extension text. Unsafe identifier syntax and
+  terminal controls also fail closed.
+- Built-in detectors cover credential assignments and Authorization values,
+  common standalone provider tokens and JWTs, private-key headers, UUIDs,
+  email addresses, URLs, IP addresses, host/port endpoints, and absolute paths.
+  A match protects the whole field, so no prefix, suffix, length, or token
+  fragment is exposed. Operators may configure up to 64 protected identifiers;
+  the policy compares them case-insensitively and never prints them in notices.
+- Paths default to `REDACT_ALL`. An operator can opt into
+  `RELATIVE_WITHIN_ROOT` with an existing approved root. The policy resolves
+  the candidate and root to canonical real paths, rejects missing files and
+  symlink/traversal escapes, and emits only a relative path if it passes the
+  same detectors. This is a display rule, not permission to read the file.
 - Replace a value with a typed marker such as `<redacted:token>`.
 - Redact all occurrences, including causes, suppressed exceptions, excerpts,
   labels, structured fields, and extension-provided data.
@@ -94,6 +117,18 @@ There is no automatic screenshot, clipboard read, telemetry, or upload.
 - Bound redaction work to resist pathological input while preserving safe
   fallback behavior.
 - Record that redaction occurred without logging the removed value.
+
+Every transformed `DisplayText` has a typed disposition and stable category.
+Per-diagnostic `RedactionNotice` counts contain no removed content. Structured
+JSON/NDJSON serializes these same markers and notices; it does not rehydrate a
+raw value or include the configured identifier list. A producer must supply
+notices for every transformed field in the completed document. Nested causes,
+suppressed data, labels, and excerpt lines follow the same conversion rule.
+
+Pattern matching alone cannot recognize every secret, especially an unlabeled
+random string or a newly introduced token format. That is why arbitrary
+external prose is omitted by default. Review a proposed `VERIFIED_PUBLIC`
+source and add a focused detector fixture before broadening what is displayed.
 
 False negatives are security bugs. False positives are usability defects and
 should be fixed without weakening protection broadly.
@@ -110,6 +145,17 @@ contain sensitive exception messages and environment data.
 - Apply a separately documented redaction mode rather than assuming raw means
   safe.
 - If writing fails, notify the operator and retain the original console fallback.
+
+The currently implemented trace mode is explicitly **raw local**. The
+`TraceRecorder` writes original Java stack traces under
+`logs/stackframe-traces/<correlation-id>.trace` with private filesystem access
+where available. These files can contain the values withheld from Stackframe
+diagnostics and are not passed through `RedactionPolicy`. They are independent
+of `latest.log` rotation and are not automatically deleted. Administrators
+must apply a local retention/deletion policy and sanitize a copy before sharing.
+See [Full trace records](FULL_TRACES.md) for exact storage and recovery behavior.
+Original platform logs may also contain raw exception text; Stackframe does
+not rewrite or suppress those logs.
 
 ## Context and file access
 
