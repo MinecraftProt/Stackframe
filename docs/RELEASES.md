@@ -77,27 +77,37 @@ No branch name contains a person's name, username, or initials.
 
 ## Publication
 
-Release automation should:
+The [release-artifact workflow](../.github/workflows/release-artifacts.yml) runs
+only for pushed `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-alpha|beta|rc.N`
+tags. It rejects lightweight tags, commits outside `main`, and mismatched
+checkout or artifact metadata. It uses the committed wrapper, Java 25, strict
+dependency verification, and the complete build/check suite currently wired to
+Gradle. A separate job creates a GitHub build-provenance attestation for the
+downloadable Fabric JAR. The workflow has no release-publication permission and
+does not run on pull requests. See the [release runbook](RELEASE_ARTIFACTS.md) for
+bundle contents, settings, verification, and recovery.
 
-1. Build from an annotated version tag on an approved commit.
-2. Use the committed Gradle wrapper and selected Java toolchain.
-3. Run the complete release test matrix.
-4. Include the root `LICENSE`, identify Stackframe as `Apache-2.0`, and generate
-   checksums, dependency/license data, and provenance. The Fabric JAR already
-   embeds a verified dependency/license inventory for its bundled components;
-   maintainers review platform-provided dependencies separately using
-   [the supply-chain procedure](SUPPLY_CHAIN.md).
-5. Produce release notes from reviewed issues and pull requests.
-6. For **each** downloadable artifact, record its filename, SHA-256, source
+Before any external publication, maintainers must:
+
+1. Confirm the full release test matrix and all applicable gates above. The
+   automated Gradle build alone does not supply dedicated-server evidence.
+2. Review the generated dependency reports, known vulnerabilities, and license
+   obligations. The Fabric JAR embeds a verified inventory for bundled
+   components; platform-provided dependencies require a separate
+   [supply-chain review](SUPPLY_CHAIN.md).
+3. Replace the generated **draft** changelog with release notes grounded in
+   reviewed issues, pull requests, and tagged-source tests.
+4. For **each** downloadable artifact, record its filename, SHA-256, source
    commit, applicable matrix row IDs, and a permalink to the exact
    `docs/COMPATIBILITY.md` revision at the release tag's commit SHA. Use the
    [release-entry template](compatibility/RELEASE_ENTRY_TEMPLATE.md); verify each
    link and matching artifact/source revision before publication.
-7. Link build and runtime evidence for the tagged source revision. If an exact
+5. Link build and runtime evidence for the tagged source revision. If an exact
    row lacks qualifying evidence, publish it as `Unknown` or a narrower status,
    never as `Supported`. Record open regressions and stale rows visibly.
-8. Require explicit maintainer approval before external publication.
-9. Never grant publication credentials to pull-request workflows.
+6. Grant explicit maintainer approval before external publication. The human
+   publisher's GitHub credential needs release write access; the build workflow
+   needs none. Pull-request workflows have no publication credentials.
 
 Partial publication is reported and recovered explicitly. Existing artifacts are
 not overwritten to hide a failed release.
