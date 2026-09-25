@@ -2,6 +2,7 @@ package org.minecraftprot.stackframe.fabric;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -91,7 +92,27 @@ class Log4jFailureCaptureTest {
                 assertEquals(1, second.events.size());
                 assertEquals(1, isolated.events.size());
                 assertEquals(2, observer.stats().delivered());
+                assertEquals(1, observer.stats().activeConfigurations());
             }
+        }
+    }
+
+    @Test
+    void failedInstallationDoesNotRemoveAnotherModsAppender() {
+        var original = new CollectingAppender("original");
+        try (var context = configuredContext("name-collision", original)) {
+            var foreign = new CollectingAppender("StackframeFailureObserver");
+            foreign.start();
+            var root = context.getConfiguration().getRootLogger();
+            root.addAppender(foreign, null, null);
+            context.updateLoggers();
+
+            assertThrows(IllegalStateException.class,
+                    () -> Log4jFailureCapture.install(context, throwable -> { }));
+            assertSame(foreign, root.getAppenders().get("StackframeFailureObserver"));
+            context.getLogger("fixture.server").error("original remains", new Exception());
+            assertEquals(1, original.events.size());
+            assertEquals(1, foreign.events.size());
         }
     }
 

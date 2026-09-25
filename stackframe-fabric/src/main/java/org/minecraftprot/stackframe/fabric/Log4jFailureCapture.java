@@ -41,8 +41,11 @@ public final class Log4jFailureCapture implements AutoCloseable {
             LoggerContext context, Consumer<Throwable> sink) {
         var capture = new Log4jFailureCapture(context, sink);
         try {
-            capture.attach(context.getConfiguration());
             context.addPropertyChangeListener(capture.configurationListener);
+            capture.attach(context.getConfiguration());
+            var current = context.getConfiguration();
+            capture.attach(current);
+            capture.keepOnly(current);
             return capture;
         } catch (RuntimeException | Error failure) {
             try {
@@ -54,12 +57,13 @@ public final class Log4jFailureCapture implements AutoCloseable {
         }
     }
 
-    public CaptureStats stats() {
+    public synchronized CaptureStats stats() {
         return new CaptureStats(
                 counters.delivered.get(),
                 counters.recursive.get(),
                 counters.sinkFailures.get(),
-                installationFailures.get());
+                installationFailures.get(),
+                attached.size());
     }
 
     private void onConfigurationChanged(PropertyChangeEvent change) {
@@ -69,6 +73,9 @@ public final class Log4jFailureCapture implements AutoCloseable {
         }
         try {
             attach(configuration);
+            if (context.getConfiguration() == configuration) {
+                keepOnly(configuration);
+            }
         } catch (Throwable ignored) {
             // Reconfiguration and every original appender continue unchanged.
             installationFailures.incrementAndGet();
@@ -96,13 +103,14 @@ public final class Log4jFailureCapture implements AutoCloseable {
             attached.put(configuration, appender);
             context.updateLoggers();
         } catch (RuntimeException | Error failure) {
-            configuration.getRootLogger().removeAppender(APPENDER_NAME);
+            removeIfOwned(configuration.getRootLogger(), appender);
             for (var logger : configuration.getLoggers().values()) {
                 if (!logger.isAdditive()) {
-                    logger.removeAppender(APPENDER_NAME);
+                    removeIfOwned(logger, appender);
                 }
             }
-            if (configuration instanceof AbstractConfiguration mutable) {
+            if (configuration instanceof AbstractConfiguration mutable
+                    && configuration.getAppender(APPENDER_NAME) == appender) {
                 mutable.removeAppender(APPENDER_NAME);
             }
             appender.stop();
@@ -110,9 +118,24 @@ public final class Log4jFailureCapture implements AutoCloseable {
         }
     }
 
+    private synchronized void keepOnly(Configuration current) {
+        // Log4j owns stopping old configurations. Do not retain them forever.
+        attached.keySet().removeIf(previous -> previous != current);
+    }
+
     private void addIfAbsent(LoggerConfig logger, ObserverAppender appender) {
-        if (logger.getAppenders().get(APPENDER_NAME) != appender) {
+        var existing = logger.getAppenders().get(APPENDER_NAME);
+        if (existing != null && existing != appender) {
+            throw new IllegalStateException("Stackframe observer appender name is already in use");
+        }
+        if (existing == null) {
             logger.addAppender(appender, Level.ERROR, null);
+        }
+    }
+
+    private static void removeIfOwned(LoggerConfig logger, ObserverAppender appender) {
+        if (logger.getAppenders().get(APPENDER_NAME) == appender) {
+            logger.removeAppender(APPENDER_NAME);
         }
     }
 
@@ -125,16 +148,18 @@ public final class Log4jFailureCapture implements AutoCloseable {
         context.removePropertyChangeListener(configurationListener);
         for (var entry : attached.entrySet()) {
             var configuration = entry.getKey();
-            configuration.getRootLogger().removeAppender(APPENDER_NAME);
+            var appender = entry.getValue();
+            removeIfOwned(configuration.getRootLogger(), appender);
             for (var logger : configuration.getLoggers().values()) {
                 if (!logger.isAdditive()) {
-                    logger.removeAppender(APPENDER_NAME);
+                    removeIfOwned(logger, appender);
                 }
             }
-            if (configuration instanceof AbstractConfiguration mutable) {
+            if (configuration instanceof AbstractConfiguration mutable
+                    && configuration.getAppender(APPENDER_NAME) == appender) {
                 mutable.removeAppender(APPENDER_NAME);
             }
-            entry.getValue().stop();
+            appender.stop();
         }
         context.updateLoggers();
     }
@@ -143,7 +168,8 @@ public final class Log4jFailureCapture implements AutoCloseable {
             long delivered,
             long recursiveSuppressed,
             long sinkFailures,
-            long installationFailures) {
+            long installationFailures,
+            int activeConfigurations) {
     }
 
     private static final class Counters {
