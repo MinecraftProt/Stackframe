@@ -8,6 +8,7 @@ dependencies {
     api(project(":stackframe-core"))
     implementation(libs.icu4j)
     testImplementation(project(":stackframe-testkit"))
+    testImplementation("com.google.code.gson:gson:2.14.0")
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
