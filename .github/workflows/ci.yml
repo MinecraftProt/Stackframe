@@ -56,6 +56,27 @@ jobs:
       - name: Test release packaging
         run: python3 -m unittest discover -s scripts/release/tests -v
 
+      - name: Build pinned server failure fixture
+        run: ./gradlew --no-daemon --stacktrace --dependency-verification=strict :stackframe-fabric:serverMatrixFixtureJar
+
+      - name: Run dedicated Fabric server matrix
+        timeout-minutes: 20
+        run: python3 scripts/server_matrix/run.py
+
+      - name: Upload dedicated server evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: server-matrix-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            stackframe-fabric/build/server-matrix/**/console.log
+            stackframe-fabric/build/server-matrix/**/result.json
+            stackframe-fabric/build/server-matrix/**/logs/latest.log
+            stackframe-fabric/build/server-matrix/**/logs/stackframe-traces/*.trace
+            stackframe-fabric/build/server-matrix/**/crash-reports/*.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Upload failure reports
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
