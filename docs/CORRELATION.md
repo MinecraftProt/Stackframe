@@ -77,6 +77,8 @@ renderers are unchanged.
 
 The bounded Fabric queue can still omit a supplemental diagnostic under
 backpressure, and the two-second shutdown deadline can leave work unfinished.
+On graceful server stop, Fabric drains at the end of `MinecraftServer.stopServer`
+before Log4j shuts down; a JVM shutdown hook remains a fallback for early crashes.
 Neither case consumes the original Log4j event. Real Minecraft server and
 hosting-platform validation remains governed by the compatibility matrix.
 

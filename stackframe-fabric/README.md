@@ -51,7 +51,10 @@ capture is disabled with a location-aware error while original logging continues
 If trace storage fails, the diagnostic says so and points back to the original
 server log. A full queue or shutdown deadline may omit a supplemental
 diagnostic, but the original event still reaches normal appenders. The worker
-drains queued events for up to two seconds at shutdown.
+drains queued events for up to two seconds at shutdown. A server stop-tail hook
+starts that drain while Log4j is still active, so pending repeat summaries can
+reach the normal appenders. The JVM shutdown hook is an idempotent fallback when
+Minecraft never reaches graceful stop.
 
 Capture begins when Fabric calls `preLaunch`; loader failures before that hook
 cannot be observed by this adapter. The current tests exercise Log4j startup,

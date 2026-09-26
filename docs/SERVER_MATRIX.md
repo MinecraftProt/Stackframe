@@ -34,6 +34,13 @@ handling from the exit code.
 Other host errors may generate unrelated diagnostics; assertions match the
 fixture's unique marker and trace ID rather than counting every server error.
 
+The shutdown fixture exposed a real lifecycle boundary: on Linux the JVM's
+shutdown hooks can stop Log4j before Stackframe publishes its pending repeat
+summary. Stackframe now drains at the tail of Minecraft's graceful `stopServer`
+method, while Log4j is active. The JVM hook remains an idempotent fallback for
+crashes that never reach normal server stop; an abrupt JVM halt still cannot
+promise a final supplemental summary.
+
 Run locally after building the normal artifact and fixture:
 
 ```shell

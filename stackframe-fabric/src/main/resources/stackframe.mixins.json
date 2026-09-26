@@ -1,0 +1,6 @@
+{
+  "required": true,
+  "package": "org.minecraftprot.stackframe.fabric.mixin",
+  "mixins": ["MinecraftServerShutdownMixin"],
+  "injectors": {"defaultRequire": 1}
+}
