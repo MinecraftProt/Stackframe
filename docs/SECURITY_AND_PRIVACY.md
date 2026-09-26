@@ -48,7 +48,7 @@ Classification occurs before rendering. A renderer cannot opt out of redaction.
 
 ## Client edition data handling
 
-The planned client edition follows the same completed-model redaction boundary
+The development client adapter follows the same completed-model redaction boundary
 and the [client contract](CLIENT_EDITION.md). The current model's
 `SERVER_SENSITIVE` class also covers private client environment and endpoint
 values; it is a shared sensitivity label, not a claim that the value came from a

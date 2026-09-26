@@ -2,7 +2,7 @@
 
 This document specifies the client edition for
 [issue #63](https://github.com/MinecraftProt/Stackframe/issues/63). A separate
-Fabric client development bootstrap now exists, but it is not a released client
+Fabric client development capture now exists, but it is not a released client
 artifact or a client compatibility claim. The terms **MUST**, **MUST NOT**,
 **SHOULD**, and **MAY** are
 normative. [ADR 005](decisions/005-client-edition-boundaries.md) records the
@@ -64,6 +64,17 @@ a real failed result. Ordinary warnings, expected disconnects, user
 cancellation, and successful reloads do not create error diagnostics. A client
 hook cannot promise to observe failures in native code, another process, a
 killed JVM, or hooks that fail before Stackframe loads.
+
+The current development adapter installs a passive Log4j observer at Fabric
+`preLaunch`, and adds narrow observation at Minecraft's failed resource-reload
+future, the client-facing connection exception handler, crash-report creation,
+and the original client crash route. It uses a bounded worker for the generic
+`SF0001` log supplement and private raw trace; it does not construct UI state.
+The same throwable object is admitted once across these hooks while it remains
+in the bounded identity cache. Errors logged
+before `preLaunch`, unlogged worker exceptions, and failures below Java remain
+outside this implementation's evidence. No mod ownership or remote cause is
+inferred from these observations.
 
 ### Origin and blame
 

@@ -20,6 +20,11 @@ the sanitized support-bundle feature is
 [issue #36](https://github.com/MinecraftProt/Stackframe/issues/36).
 The adapter has an isolated test suite and a no-EULA startup smoke test, but no
 released compatibility claim or full dedicated-server integration matrix.
+The separate development Fabric client artifact observes throwable-bearing
+`ERROR`/`FATAL` logs from `preLaunch` onward, failed resource-reload futures,
+client connection exceptions, and Minecraft crash-report/crash paths. It emits
+the same generic code with safe generated wording, while preserving original
+client logs and crash reports. There is no client UI or compatibility claim yet.
 
 ## Read a diagnostic
 
@@ -29,7 +34,7 @@ emphasis but no extra facts. For example, this is an illustrative generic
 `SF0001` payload from the development Fabric path:
 
 ```text
-error[SF0001]: an unexpected server operation failed
+error[SF0001]: an unexpected operation failed
 trace: complete details preserved as diagnostic C9012E0000000000; diagnostic
   DC9012E0000000000; correlation C9012E0000000000
 ```
@@ -41,7 +46,7 @@ may contain more causes and suppressed exceptions than the short view.
 ## Find the full trace
 
 The Fabric adapter's core recorder writes a successful full trace to
-`logs/stackframe-traces/<correlation-id>.trace`, relative to the server working
+`logs/stackframe-traces/<correlation-id>.trace`, relative to the process working
 directory. It uses the same opaque correlation ID shown in the diagnostic.
 The record contains the original Java throwable, causes, suppressed exceptions,
 and frames. See [Full trace records](FULL_TRACES.md) for write guarantees,

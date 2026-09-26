@@ -1,0 +1,14 @@
+{
+    "required": false,
+    "package": "org.minecraftprot.stackframe.fabric.client.mixin",
+    "compatibilityLevel": "JAVA_25",
+    "client": [
+        "ClientConnectionMixin",
+        "ClientCrashMixin",
+        "ClientCrashReportMixin",
+        "ClientResourceReloadMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 0
+    }
+}

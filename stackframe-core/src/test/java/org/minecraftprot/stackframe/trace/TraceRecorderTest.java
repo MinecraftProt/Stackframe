@@ -182,7 +182,7 @@ class TraceRecorderTest {
         var root = new Diagnostic(
                 Severity.ERROR,
                 new DiagnosticCode("SF0001"),
-                new CatalogText("generic.failure", "an unexpected server operation failed"),
+                new CatalogText("generic.failure", "an unexpected operation failed"),
                 BoundedList.empty(),
                 notes,
                 BoundedList.empty(),
