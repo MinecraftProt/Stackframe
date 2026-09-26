@@ -34,6 +34,8 @@ implemented behavior from contracts that still need integration evidence.
     settings, strict validation, defaults, and migration policy.
 15. [Support bundle staging](SUPPORT_BUNDLES.md) defines bounded local export
     from completed diagnostics and the remaining operator-flow boundary.
+16. [Resource budgets](RESOURCE_BUDGETS.md) lists the implemented work, output,
+    queue, and cache limits and their overflow behavior.
 
 ## Operator help
 

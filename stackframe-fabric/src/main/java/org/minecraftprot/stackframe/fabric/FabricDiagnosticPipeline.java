@@ -39,12 +39,14 @@ import org.minecraftprot.stackframe.trace.TraceRetention;
  */
 public final class FabricDiagnosticPipeline implements AutoCloseable {
     private static final int DEFAULT_CAPACITY = 128;
+    private static final int MAX_CAPACITY = 4_096;
     private static final long SHUTDOWN_WAIT_MILLIS = 2_000;
     private static final Logger DIAGNOSTIC_LOGGER =
             LogManager.getLogger("org.minecraftprot.stackframe.fabric.Diagnostic");
     private static final DiagnosticCode GENERIC_CODE = new DiagnosticCode("SF0001");
 
     private final ArrayBlockingQueue<Observation> pending;
+    private final int queueCapacity;
     private final TraceRecorder recorder;
     private final DiagnosticCorrelator correlator;
     private final StackframeConfiguration configuration;
@@ -59,6 +61,8 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
     private final AtomicLong suppressed = new AtomicLong();
     private final AtomicLong repeatSummaries = new AtomicLong();
     private final AtomicLong filtered = new AtomicLong();
+    private final AtomicLong peakQueued = new AtomicLong();
+    private long reportedDrops;
     private volatile boolean accepting = true;
 
     public FabricDiagnosticPipeline() {
@@ -104,8 +108,9 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
     FabricDiagnosticPipeline(
             TraceRecorder recorder, Consumer<String> output, int capacity,
             StackframeConfiguration configuration) {
-        if (recorder == null || output == null || configuration == null || capacity < 1) {
-            throw new IllegalArgumentException("recorder, output, and positive capacity are required");
+        if (recorder == null || output == null || configuration == null
+                || capacity < 1 || capacity > MAX_CAPACITY) {
+            throw new IllegalArgumentException("recorder, output, and queue capacity 1-4096 are required");
         }
         this.recorder = recorder;
         this.configuration = configuration;
@@ -115,6 +120,7 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
                 ? RenderOptions.ansi(RenderWidth.unknown())
                 : RenderOptions.plain(RenderWidth.unknown());
         this.output = output;
+        this.queueCapacity = capacity;
         if (configuration.retention().automatic()
                 && Files.exists(recorder.directory(), LinkOption.NOFOLLOW_LINKS)) {
             publishRetention(retention.clean());
@@ -147,12 +153,14 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
             return;
         }
         accepted.incrementAndGet();
+        peakQueued.accumulateAndGet(pending.size(), Math::max);
     }
 
     public PipelineStats stats() {
         return new PipelineStats(
                 accepted.get(), processed.get(), dropped.get(), processingFailures.get(),
-                suppressed.get(), repeatSummaries.get(), filtered.get());
+                suppressed.get(), repeatSummaries.get(), filtered.get(),
+                pending.size(), queueCapacity, peakQueued.get());
     }
 
     private void run() {
@@ -163,11 +171,13 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
                     process(observation);
                 }
                 publishSummaries(correlator.drainExpired());
+                publishDropped();
             } catch (InterruptedException ignored) {
                 // An external interrupt must not skip accepted events.
             }
         }
         publishSummaries(correlator.drainAll());
+        publishDropped();
     }
 
     private void process(Observation observation) {
@@ -270,6 +280,23 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
         return resolved;
     }
 
+    private void publishDropped() {
+        var total = dropped.get();
+        var delta = total - reportedDrops;
+        if (delta == 0) {
+            return;
+        }
+        reportedDrops = total;
+        try {
+            output.accept("[Stackframe] " + delta
+                    + " supplemental diagnostics skipped because the queue was full or capture stopped;"
+                    + " original log events continue through normal appenders.\n");
+        } catch (Throwable ignored) {
+            processingFailures.incrementAndGet();
+            // Do not retry a failed status write every polling cycle.
+        }
+    }
+
     private static void logDiagnostic(String rendered) {
         // A single log event lets each existing appender serialize its own output.
         DIAGNOSTIC_LOGGER.error(rendered.stripTrailing());
@@ -294,7 +321,10 @@ public final class FabricDiagnosticPipeline implements AutoCloseable {
             long processingFailures,
             long suppressed,
             long repeatSummaries,
-            long filtered) {
+            long filtered,
+            int queued,
+            int queueCapacity,
+            long peakQueued) {
     }
 
     private record Observation(Throwable throwable, Importance importance) {
