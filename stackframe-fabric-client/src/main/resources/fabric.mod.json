@@ -14,10 +14,16 @@
     "license": "Apache-2.0",
     "environment": "client",
     "entrypoints": {
+        "preLaunch": [
+            "org.minecraftprot.stackframe.fabric.client.StackframeClientPreLaunch"
+        ],
         "client": [
             "org.minecraftprot.stackframe.fabric.client.StackframeClient"
         ]
     },
+    "mixins": [
+        "stackframe-client.mixins.json"
+    ],
     "depends": {
         "fabricloader": "0.19.3",
         "minecraft": "26.2",

@@ -526,7 +526,7 @@ styling is unavailable.
 ### Unknown exception
 
 ```text
-error[SF0001]: an unexpected server operation failed
+error[SF0001]: an unexpected operation failed
 location: server startup
 exception: com.example.CustomException
 note: Stackframe has no specialized diagnostic for this failure

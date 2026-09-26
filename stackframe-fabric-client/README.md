@@ -7,12 +7,31 @@ client running the exact selected Minecraft 26.2, Java 25, and Fabric Loader
 `"environment": "client"` and a client-only entrypoint, so Fabric Loader skips
 it on a dedicated server; no client class is loaded there.
 
-The bootstrap currently logs its initialization. Client failure capture,
-in-game presentation, and compatibility claims are separate work in
-[#61](https://github.com/MinecraftProt/Stackframe/issues/61),
-[#62](https://github.com/MinecraftProt/Stackframe/issues/62), and
+The development adapter installs a passive Log4j observer at Fabric
+`preLaunch`, then observes throwable-bearing `ERROR`/`FATAL` logs, failed
+resource-reload futures, client connection exceptions, and vanilla crash-report
+creation/crash handling. It queues bounded work off the calling thread, emits
+the generic `SF0001` log supplement with generated text only, and writes the
+original throwable to a private local trace. Repeated observation of the same
+throwable while retained in the bounded identity cache produces one supplement.
+Minecraft's original log, disconnect, and
+crash behavior remains in control. The original files and Stackframe's private
+trace are raw and may contain sensitive data.
+
+This covers Java failures at the listed hooks after Stackframe installs. An
+error before `preLaunch`, an unlogged worker exception, or a native/process
+failure may have no Stackframe supplement. There is no client UI yet; in-game
+presentation and compatibility evidence remain in
+[#62](https://github.com/MinecraftProt/Stackframe/issues/62) and
 [#66](https://github.com/MinecraftProt/Stackframe/issues/66). No released client
 support is claimed by this build.
+
+| Caller | Capture behavior |
+| --- | --- |
+| Pre-window startup and mod initialization | `preLaunch` installs the observer; only plain log output is possible. Loader failures before this point remain vanilla-only. |
+| Render/main task and resource reload | A bounded queue offer occurs on the caller or completion thread; trace writing and rendering run on the daemon worker. Fatal exceptions continue through Minecraft's own handling. |
+| Network and other worker threads | The client-facing connection exception hook and throwable-bearing error logs offer without touching UI or waiting for disk. Unlogged worker exceptions are not observed. |
+| Shutdown | The observer detaches and the worker gets up to 500 ms to drain accepted work. Queue saturation or worker failure loses only the supplement; original logging or crash reporting remains responsible for the failure. |
 
 Build with Java 25 and the committed wrapper:
 

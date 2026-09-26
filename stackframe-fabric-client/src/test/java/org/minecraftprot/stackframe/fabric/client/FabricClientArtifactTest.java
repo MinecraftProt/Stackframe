@@ -34,9 +34,18 @@ class FabricClientArtifactTest {
             assertTrue(metadata.contains("org.minecraftprot.stackframe.fabric.client.StackframeClient"));
             assertFalse(hasArrayField(metadata, "main"));
             assertFalse(hasArrayField(metadata, "server"));
-            assertFalse(hasArrayField(metadata, "preLaunch"));
+            assertTrue(hasArrayField(metadata, "preLaunch"));
+            assertTrue(metadata.contains("org.minecraftprot.stackframe.fabric.client.StackframeClientPreLaunch"));
+            assertTrue(metadata.contains("stackframe-client.mixins.json"));
 
             assertNotNull(jar.getEntry("org/minecraftprot/stackframe/fabric/client/StackframeClient.class"));
+            assertNotNull(jar.getEntry("org/minecraftprot/stackframe/fabric/client/StackframeClientPreLaunch.class"));
+            assertNotNull(jar.getEntry("org/minecraftprot/stackframe/fabric/client/ClientCaptureBootstrap.class"));
+            var mixins = new String(read(jar, "stackframe-client.mixins.json"), StandardCharsets.UTF_8);
+            assertTrue(mixins.contains("ClientConnectionMixin"));
+            assertTrue(mixins.contains("ClientCrashMixin"));
+            assertTrue(mixins.contains("ClientCrashReportMixin"));
+            assertTrue(mixins.contains("ClientResourceReloadMixin"));
             assertNull(jar.getEntry("org/minecraftprot/stackframe/fabric/StackframeFabric.class"));
             assertNotNull(jar.getEntry("META-INF/jars/stackframe-core-" + version + ".jar"));
             assertNotNull(jar.getEntry("META-INF/jars/stackframe-renderer-" + version + ".jar"));

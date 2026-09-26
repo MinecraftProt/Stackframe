@@ -72,7 +72,7 @@ No classifier registrations are allocated.
 | `VALIDATE_CONFIGURATION` | `INSPECT_ONLY` | false | false | false | Validate configuration without changing it. |
 
 <a id="sf0001-unexpected-operation"></a>
-## SF0001 - an unexpected server operation failed
+## SF0001 - an unexpected operation failed
 
 - **Symbolic key:** `generic.unexpected-operation`
 - **Area:** Stackframe and generic fallback

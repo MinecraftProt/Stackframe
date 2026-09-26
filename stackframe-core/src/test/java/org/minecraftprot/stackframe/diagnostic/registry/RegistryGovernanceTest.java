@@ -24,7 +24,7 @@ class RegistryGovernanceTest {
         var second = RegistryCatalogGenerator.generate(REGISTRY);
 
         assertEquals(first, second);
-        assertTrue(first.contains("## SF0001 - an unexpected server operation failed"));
+        assertTrue(first.contains("## SF0001 - an unexpected operation failed"));
         assertTrue(first.contains("generic.unexpected-operation"));
         assertTrue(first.contains("`fallback-conflict`"));
         assertTrue(first.contains("`excluded-low-confidence`"));

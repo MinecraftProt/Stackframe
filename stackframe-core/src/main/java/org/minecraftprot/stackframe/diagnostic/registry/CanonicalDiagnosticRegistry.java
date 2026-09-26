@@ -28,7 +28,7 @@ public final class CanonicalDiagnosticRegistry {
                 "core-diagnostics",
                 new CatalogText(
                         "generic.unexpected-operation.title",
-                        "an unexpected server operation failed"),
+                        "an unexpected operation failed"),
                 "Reports an unexpected operation failure when no safe specialized diagnosis is available.",
                 new EvidenceRequirement(
                         "Verified operation scope, redacted exception type when available, and trace preservation facts only.",
