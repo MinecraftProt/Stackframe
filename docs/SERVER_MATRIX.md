@@ -13,7 +13,7 @@ before the matrix starts.
 | Scenario | Actual server phase and trigger | Expected result |
 | --- | --- | --- |
 | `clean-start` | No injected failure; reach ready state and stop | Bootstrap and clean shutdown |
-| `mod-loading` | Fixture `preLaunch` entrypoint, after Stackframe's own hook | Two original Log4j errors, one supplemental diagnostic and trace, one repeat summary |
+| `prelaunch-after-hook` | Fixture `preLaunch` entrypoint explicitly invokes Stackframe's idempotent hook first | Two original Log4j errors, one supplemental diagnostic and trace, one repeat summary |
 | `startup` | Fixture `main` mod entrypoint | Same correlation and trace contract |
 | `world` | Mixin on `MinecraftServer.loadLevel` | Same correlation and trace contract during world load |
 | `registry` | Mixin on `MinecraftServer.registryAccess` | Same contract during registry access |
@@ -59,7 +59,15 @@ runner timeout kills the complete process group before the next scenario.
 
 The matrix exercises the failure-capture path after Fabric invokes Stackframe's
 `preLaunch` hook. Loader discovery and resolution failures before that hook are
-outside the current capture boundary. The phase fixture deliberately emits or
+outside the current capture boundary. Fabric does not guarantee cross-mod
+`preLaunch` ordering from a dependency declaration alone. For the controlled
+`prelaunch-after-hook`
+case, the fixture explicitly invokes Stackframe's idempotent hook before logging
+its failure; this tests post-hook capture without claiming that all mods run
+after Stackframe. In the [2026-09-26 Linux CI run](https://github.com/MinecraftProt/Stackframe/actions/runs/36237892825),
+the naturally ordered fixture ran first: its two original Log4j errors survived,
+while Stackframe could not yet emit a supplemental trace or diagnostic. The phase
+fixture deliberately emits or
 throws a failure; it does not claim to reproduce every naturally occurring
 world, registry, datapack, or third-party Mixin failure. The matrix is one
 evidence source for the exact candidate row in

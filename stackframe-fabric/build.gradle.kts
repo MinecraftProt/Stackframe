@@ -7,6 +7,7 @@ description = "Stackframe dedicated-server integration for Fabric"
 // This fixture is a separate, test-only Fabric mod. It is never included in the
 // Stackframe artifact or any production dependency configuration.
 val serverMatrixFixture = sourceSets.create("serverMatrixFixture") {
+    compileClasspath += sourceSets.getByName("main").output
     compileClasspath += sourceSets.getByName("main").compileClasspath
 }
 

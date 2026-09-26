@@ -29,7 +29,7 @@ FABRIC = ROOT / "stackframe-fabric"
 OUTPUT = FABRIC / "build" / "server-matrix"
 SCENARIOS = (
     "clean-start",
-    "mod-loading",
+    "prelaunch-after-hook",
     "startup",
     "world",
     "registry",
@@ -122,7 +122,7 @@ def validate(
     if "FailureFixture" not in trace and "ServerPhaseMixin" not in trace:
         errors.append("raw trace lost the fixture stack frame")
     phase_frame = {
-        "mod-loading": "FailureFixture.onPreLaunch",
+        "prelaunch-after-hook": "FailureFixture.onPreLaunch",
         "startup": "FailureFixture.onInitialize",
         "world": "MinecraftServer.loadLevel",
         "registry": "MinecraftServer.registryAccess",
