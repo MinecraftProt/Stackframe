@@ -2,6 +2,7 @@ package org.minecraftprot.stackframe.fabric;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -14,6 +15,7 @@ import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
@@ -309,6 +311,102 @@ class FabricDiagnosticPipelineTest {
         assertTrue(rendered.contains("trace retention could not complete"));
         assertTrue(rendered.contains("UNSAFE_DIRECTORY"));
         assertFalse(rendered.contains("not-a-directory"));
+    }
+
+    @Test
+    void burstSaturationKeepsCaptureNonblockingAndReportsSkippedDiagnostics() throws Exception {
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var firstOutput = new AtomicBoolean(true);
+        var output = new ByteArrayOutputStream();
+        var pipeline = new FabricDiagnosticPipeline(
+                new TraceRecorder(temp.resolve("burst-traces")), rendered -> {
+                    if (firstOutput.compareAndSet(true, false)) {
+                        entered.countDown();
+                        try {
+                            release.await(5, TimeUnit.SECONDS);
+                        } catch (InterruptedException interrupted) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException(interrupted);
+                        }
+                    }
+                    write(output, rendered);
+                }, 2);
+        try {
+            pipeline.accept(new IllegalStateException("first failure"));
+            assertTrue(entered.await(3, TimeUnit.SECONDS));
+            var sender = Thread.ofPlatform().start(() -> {
+                var repeated = new IllegalStateException("private repeated failure");
+                for (var index = 0; index < 1_000; index++) {
+                    pipeline.accept(repeated);
+                }
+            });
+            sender.join(3_000);
+            assertFalse(sender.isAlive(), "queue saturation blocked the capture thread");
+            assertTrue(pipeline.stats().dropped() > 0);
+            assertEquals(2, pipeline.stats().queueCapacity());
+            assertTrue(pipeline.stats().queued() <= 2);
+            assertTrue(pipeline.stats().peakQueued() <= 2);
+            assertThrows(IllegalArgumentException.class,
+                    () -> new FabricDiagnosticPipeline(
+                            new TraceRecorder(temp.resolve("too-large")), rendered -> {}, 4_097));
+        } finally {
+            release.countDown();
+            pipeline.close();
+        }
+        var stats = pipeline.stats();
+        assertEquals(stats.accepted(), stats.processed());
+        assertEquals(0, stats.queued());
+        assertEquals(1_001, stats.accepted() + stats.dropped());
+        assertTrue(output.toString(StandardCharsets.UTF_8)
+                .contains("supplemental diagnostics skipped"));
+    }
+
+    @Test
+    void sustainedPressureKeepsRetentionWithinQueueCapacity() throws Exception {
+        var permits = new Semaphore(0);
+        var pipeline = new FabricDiagnosticPipeline(
+                new TraceRecorder(temp.resolve("sustained-traces")), rendered -> {
+                    if (!rendered.contains("SF0001")) {
+                        return;
+                    }
+                    try {
+                        if (!permits.tryAcquire(5, TimeUnit.SECONDS)) {
+                            throw new IllegalStateException("test output gate timed out");
+                        }
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(interrupted);
+                    }
+                }, 3);
+        try {
+            for (var round = 0; round < 20; round++) {
+                for (var index = 0; index < 20; index++) {
+                    pipeline.accept(new IllegalStateException("round " + round + " event " + index));
+                }
+                permits.release();
+                awaitProcessed(pipeline, round + 1);
+                assertTrue(pipeline.stats().queued() <= 3);
+            }
+        } finally {
+            permits.release(1_000);
+            pipeline.close();
+        }
+        var stats = pipeline.stats();
+        assertEquals(400, stats.accepted() + stats.dropped());
+        assertEquals(stats.accepted(), stats.processed());
+        assertEquals(0, stats.queued());
+        assertTrue(stats.peakQueued() <= stats.queueCapacity());
+    }
+
+    private static void awaitProcessed(FabricDiagnosticPipeline pipeline, long target)
+            throws InterruptedException {
+        var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (pipeline.stats().processed() < target && System.nanoTime() < deadline) {
+            Thread.sleep(1);
+        }
+        assertTrue(pipeline.stats().processed() >= target,
+                "worker did not make progress under sustained pressure");
     }
 
     private static int occurrences(String text, String fragment) {

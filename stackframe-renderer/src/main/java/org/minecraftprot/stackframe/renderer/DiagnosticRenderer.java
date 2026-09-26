@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.LongSupplier;
 import org.minecraftprot.stackframe.diagnostic.Diagnostic;
 import org.minecraftprot.stackframe.diagnostic.DiagnosticDocument;
 import org.minecraftprot.stackframe.diagnostic.Excerpt;
@@ -27,10 +28,18 @@ public final class DiagnosticRenderer {
     public static void render(
             DiagnosticDocument document, Appendable destination, RenderOptions options)
             throws IOException {
+        render(document, destination, options, System::nanoTime);
+    }
+
+    static void render(DiagnosticDocument document, Appendable destination,
+            RenderOptions options, LongSupplier ticker) throws IOException {
         if (document == null || destination == null || options == null) {
             throw new IllegalArgumentException("document, destination, and options must not be null");
         }
-        var renderer = new Engine(new BoundedOutput(destination, options.limits()), options);
+        if (ticker == null) {
+            throw new IllegalArgumentException("ticker must not be null");
+        }
+        var renderer = new Engine(new BoundedOutput(destination, options.limits(), ticker), options);
         renderer.render(document);
     }
 
@@ -513,16 +522,21 @@ public final class DiagnosticRenderer {
     private static final class BoundedOutput {
         private final Appendable destination;
         private final RenderLimits limits;
+        private final LongSupplier ticker;
+        private final long startedAt;
         private long bytes;
         private int lines;
         private long work;
 
-        private BoundedOutput(Appendable destination, RenderLimits limits) {
+        private BoundedOutput(Appendable destination, RenderLimits limits, LongSupplier ticker) {
             this.destination = destination;
             this.limits = limits;
+            this.ticker = ticker;
+            this.startedAt = ticker.getAsLong();
         }
 
         private void append(CharSequence value) throws IOException {
+            checkTime();
             var additionalBytes = utf8Bytes(value);
             var additionalLines = countLines(value);
             if (additionalBytes > limits.maxUtf8Bytes() - bytes) {
@@ -536,14 +550,23 @@ public final class DiagnosticRenderer {
             bytes += additionalBytes;
             lines += additionalLines;
             destination.append(value);
+            checkTime();
         }
 
         private void consumeWork(long units) {
+            checkTime();
             if (units < 0 || units > limits.maxWorkUnits() - work) {
                 throw new RenderLimitException(
                         "renderer work limit exceeded: " + limits.maxWorkUnits());
             }
             work += units;
+        }
+
+        private void checkTime() {
+            if (ticker.getAsLong() - startedAt > limits.maxElapsed().toNanos()) {
+                throw new RenderLimitException(
+                        "renderer elapsed time limit exceeded: " + limits.maxElapsed());
+            }
         }
 
         private static long utf8Bytes(CharSequence value) {
