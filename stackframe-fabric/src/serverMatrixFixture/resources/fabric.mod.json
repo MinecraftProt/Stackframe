@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "stackframe_server_matrix_fixture",
+  "version": "0.1.0",
+  "name": "Stackframe dedicated-server matrix fixture",
+  "environment": "server",
+  "entrypoints": {
+    "preLaunch": ["org.minecraftprot.stackframe.matrix.FailureFixture"],
+    "main": ["org.minecraftprot.stackframe.matrix.FailureFixture"]
+  },
+  "mixins": ["stackframe-matrix.mixins.json"],
+  "depends": {
+    "fabricloader": "0.19.3",
+    "minecraft": "26.2",
+    "stackframe": "*"
+  }
+}

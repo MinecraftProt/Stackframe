@@ -13,6 +13,7 @@
     },
     "license": "Apache-2.0",
     "environment": "server",
+    "mixins": ["stackframe.mixins.json"],
     "entrypoints": {
         "preLaunch": [
             "org.minecraftprot.stackframe.fabric.StackframePreLaunch"

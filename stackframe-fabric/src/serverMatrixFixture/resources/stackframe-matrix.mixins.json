@@ -1,0 +1,6 @@
+{
+  "required": true,
+  "package": "org.minecraftprot.stackframe.matrix.mixin",
+  "mixins": ["ServerPhaseMixin"],
+  "injectors": {"defaultRequire": 1}
+}

@@ -39,7 +39,13 @@ GitHub Actions runs the exact command above for pull requests targeting `dev`
 and pushes to `main` or `dev`. CI validates the committed wrapper before using
 it, provisions Temurin Java 25, and preserves Gradle dependency verification and
 locking. It compiles, tests, and packages the separate Fabric server and client
-development artifacts, but does not start either game side or accept the EULA.
+development artifacts. CI also packages a test-only Fabric mod and runs the
+[dedicated server matrix](SERVER_MATRIX.md) on the selected Minecraft 26.2 and
+Loader 0.19.3 baseline. Each server is isolated, bound to loopback, stopped with
+its console command or killed at a fixed deadline, and launched through Gradle
+`--offline` after dependency resolution. The test runner writes `eula=true` only
+in its disposable CI server directories; a local development server still
+requires the operator to accept the EULA separately.
 
 Strict Gradle verification covers downloaded build, Fabric, and library
 artifacts. Loom also verifies its downloaded Minecraft JAR before transforming
@@ -58,8 +64,12 @@ is trusted without a checksum.
 
 When verification fails, the workflow uploads any Gradle problem reports, test
 reports, and test result XML as a `verification-reports-...` artifact on the
-failed Actions run. These artifacts are retained for five days. Runtime server
-directories, logs, and EULA files are never uploaded.
+failed Actions run. These artifacts are retained for five days. The server
+matrix uploads its CI-generated console log, Minecraft latest log, fixture raw
+traces, crash reports, and result snapshots on both success and failure for 14
+days. These may contain local paths and raw exception text; do not put secrets
+or real player data in the fixture. EULA files and generated worlds are not
+uploaded.
 
 ## Development dedicated server
 
@@ -80,10 +90,10 @@ Successful startup prints:
 [Stackframe] Loaded Stackframe dedicated-server bootstrap.
 ```
 
-This smoke test does not change the compatibility status from **Unknown**. Support
-claims require exact, dated runtime evidence in the
-[current public matrix](COMPATIBILITY.md#current-public-matrix). The CI build and
-artifact packaging checks above are not runtime compatibility tests.
+This smoke test and the development-classpath server matrix do not change the
+compatibility status from **Unknown**. Support claims require exact, dated
+released-artifact runtime evidence in the
+[current public matrix](COMPATIBILITY.md#current-public-matrix).
 
 ## Development Fabric client
 

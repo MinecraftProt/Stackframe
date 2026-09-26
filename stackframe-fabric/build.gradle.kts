@@ -4,6 +4,21 @@ plugins {
 
 description = "Stackframe dedicated-server integration for Fabric"
 
+// This fixture is a separate, test-only Fabric mod. It is never included in the
+// Stackframe artifact or any production dependency configuration.
+val serverMatrixFixture = sourceSets.create("serverMatrixFixture") {
+    compileClasspath += sourceSets.getByName("main").output
+    compileClasspath += sourceSets.getByName("main").compileClasspath
+}
+
+val serverMatrixFixtureJar by tasks.registering(Jar::class) {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Packages the pinned dedicated-server failure fixture mod."
+    archiveBaseName.set("stackframe-server-matrix-fixture")
+    archiveVersion.set("0.1.0")
+    from(serverMatrixFixture.output)
+}
+
 dependencies {
     add("minecraft", libs.minecraft)
     implementation(libs.fabric.loader)
@@ -21,6 +36,21 @@ dependencies {
 
 loom {
     serverOnlyMinecraftJar()
+    providers.gradleProperty("serverMatrixRunDir").orNull?.let { requested ->
+        val buildPath = layout.buildDirectory.get().asFile.toPath().toAbsolutePath().normalize()
+        val runPath = file(requested).toPath().toAbsolutePath().normalize()
+        check(runPath.startsWith(buildPath)) {
+            "serverMatrixRunDir must stay inside stackframe-fabric/build"
+        }
+        runs.named("server") {
+            runDir = runPath.toString()
+        }
+    }
+}
+
+tasks.named<JavaExec>("runServer") {
+    // The matrix runner sends reload/stop over stdin to finish every process.
+    standardInput = System.`in`
 }
 
 val artifactVersion = version.toString()

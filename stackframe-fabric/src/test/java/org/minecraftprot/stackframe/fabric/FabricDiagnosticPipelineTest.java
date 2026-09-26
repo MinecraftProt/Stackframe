@@ -162,6 +162,25 @@ class FabricDiagnosticPipelineTest {
     }
 
     @Test
+    void earlyCloseAndJvmFallbackClosePublishOnlyOneRepeatSummary() {
+        var output = new ByteArrayOutputStream();
+        var pipeline = new FabricDiagnosticPipeline(
+                new TraceRecorder(temp.resolve("early-stop-traces")),
+                rendered -> write(output, rendered), 4);
+        var failure = new IllegalStateException("shutdown detail");
+        pipeline.accept(failure);
+        pipeline.accept(failure);
+
+        pipeline.close();
+        pipeline.close();
+
+        var rendered = output.toString(StandardCharsets.UTF_8);
+        assertEquals(1, occurrences(rendered, "error[SF0001]"));
+        assertEquals(1, occurrences(rendered, "was observed 1 more time"));
+        assertEquals(1, pipeline.stats().repeatSummaries());
+    }
+
+    @Test
     void distinctErrorsWithTheSameMessageRemainSeparate() throws Exception {
         var output = new ByteArrayOutputStream();
         var traces = temp.resolve("distinct-traces");

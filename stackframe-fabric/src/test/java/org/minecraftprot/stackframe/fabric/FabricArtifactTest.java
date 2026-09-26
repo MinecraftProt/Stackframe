@@ -51,6 +51,9 @@ class FabricArtifactTest {
             assertFalse(metadata.matches("(?s).*\"client\"\\s*:.*"));
             assertTrue(metadata.contains("\"preLaunch\""));
             assertTrue(metadata.contains("org.minecraftprot.stackframe.fabric.StackframePreLaunch"));
+            assertTrue(metadata.contains("\"stackframe.mixins.json\""));
+            var mixins = new String(read(zip, "stackframe.mixins.json"), StandardCharsets.UTF_8);
+            assertTrue(mixins.contains("MinecraftServerShutdownMixin"));
 
             var icuMetadata = nestedEntry(read(zip, ICU_JAR_ENTRY), "fabric.mod.json");
             var matcher = VERSION.matcher(new String(icuMetadata, StandardCharsets.UTF_8));

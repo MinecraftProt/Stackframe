@@ -67,8 +67,9 @@ becomes part of the tested combination.
 
 **As checked on 2026-09-25, there are no published Stackframe releases or tags.**
 The `0.1.0-SNAPSHOT` Fabric JAR is a development bootstrap, not an operator
-release. A successful build or one startup smoke test does not test failure
-capture, fallback, trace preservation, or coexistence with other mods. No row is
+release. The [dedicated server matrix](SERVER_MATRIX.md) tests failure capture,
+fallback, and trace preservation on Loom's development classpath. It does not
+execute a released JAR or prove coexistence with other mods and hosts. No row is
 currently supported, tested, expected-compatible, or degraded.
 
 The candidate row below is a selected build target, not a support claim.
@@ -80,7 +81,7 @@ nearby version or a build-only run.
 
 | Row | Exact scope or missing input | Status | Last tested (UTC) | Evidence / limitation | Freshness |
 | --- | --- | --- | --- | --- | --- |
-| `FS-26.2-BASE` | Development `stackframe-fabric-0.1.0-SNAPSHOT`; Minecraft `26.2`; Java feature `25` (vendor and patch not yet selected for a runtime test); Fabric Loader `0.19.3`; Fabric API not declared; OS, output destination, and other mods not yet selected | **Unknown** | Never | [Build and smoke-test scope](BUILDING.md#continuous-integration); dedicated-server matrix [#17](https://github.com/MinecraftProt/Stackframe/issues/17) still required | **No runtime evidence** |
+| `FS-26.2-BASE` | Development `stackframe-fabric-0.1.0-SNAPSHOT`; Minecraft `26.2`; Java feature `25` (vendor and patch not yet selected for a qualifying artifact test); Fabric Loader `0.19.3`; Fabric API not declared; OS, output destination, and other mods not yet selected | **Unknown** | Never | [Development-classpath server matrix](SERVER_MATRIX.md) tests capture behavior; exact released-artifact and hosting evidence is still required | **No qualifying artifact evidence** |
 | `FS-JAVA-VENDOR` | Any exact Java 25 vendor or patch not covered by a dated server row | **Unknown** | Never | Conformance alone does not prove Stackframe behavior | **No runtime evidence** |
 | `FS-LOADER-PATCH` | Fabric Loader versions other than `0.19.3`, or Fabric API versions if later required | **Unknown** | Never | Dependency patches need their own exact evidence | **No runtime evidence** |
 | `FS-OTHER-MC` | Minecraft versions other than `26.2`, including snapshots and release candidates | **Unsupported (policy)** | N/A (policy) | Exact-version policy; no second platform artifact | **Policy** |
