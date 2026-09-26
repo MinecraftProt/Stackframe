@@ -1,7 +1,11 @@
 package org.minecraftprot.stackframe.fabric;
 
+import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.minecraftprot.stackframe.fabric.config.ConfigurationFile;
+import org.minecraftprot.stackframe.fabric.config.ConfigurationProblem;
+import org.minecraftprot.stackframe.fabric.config.StackframeConfiguration;
 
 /** Installs the server observer before mod initialization and retries at the main entrypoint. */
 public final class FabricCaptureBootstrap {
@@ -14,10 +18,18 @@ public final class FabricCaptureBootstrap {
         if (installation != null) {
             return;
         }
+        final StackframeConfiguration configuration;
+        try {
+            configuration = ConfigurationFile.load(Path.of(""));
+        } catch (ConfigurationProblem invalid) {
+            System.err.println("[Stackframe] " + invalid.getMessage()
+                    + "; failure capture disabled. Original server logging continues.");
+            return;
+        }
         FabricDiagnosticPipeline pipeline = null;
         Log4jFailureCapture capture = null;
         try {
-            pipeline = new FabricDiagnosticPipeline();
+            pipeline = new FabricDiagnosticPipeline(configuration, Path.of(""));
             var readyPipeline = pipeline;
             capture = Log4jFailureCapture.installWithImportance(
                     (LoggerContext) LogManager.getContext(false),

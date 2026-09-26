@@ -14,7 +14,8 @@ writes local full traces, and emits the generic `SF0001` diagnostic through the
 existing appenders. It does not yet classify specialized failures or cover
 loader errors before `preLaunch`. Full Fabric capture verification remains in
 [issue #10](https://github.com/MinecraftProt/Stackframe/issues/10);
-operator configuration is [issue #14](https://github.com/MinecraftProt/Stackframe/issues/14);
+the development [configuration contract](CONFIGURATION.md) is tracked in
+[issue #14](https://github.com/MinecraftProt/Stackframe/issues/14);
 the sanitized support-bundle feature is
 [issue #36](https://github.com/MinecraftProt/Stackframe/issues/36).
 The adapter has an isolated test suite and a no-EULA startup smoke test, but no
@@ -68,8 +69,8 @@ log route must remain active when Stackframe's recorder or formatter fails.
 Raw `.trace` files are **not redacted**. They can expose tokens, player
 identifiers, addresses, paths, and other private values. Keep them local,
 restrict access, and never attach one unchanged to a public issue. The current
-recorder does not automatically delete records, so administrators should apply
-their own retention policy as described in [Full trace records](FULL_TRACES.md).
+recorder defaults to manual retention; bounded cleanup is opt-in through
+[Fabric configuration](CONFIGURATION.md). See [Full trace records](FULL_TRACES.md).
 
 ## Unknown diagnostic or formatter fallback
 
@@ -88,18 +89,13 @@ failure tests; full dedicated-server lifecycle evidence is still pending.
 
 ## Configuration errors
 
-There is no released Stackframe configuration file or runtime command yet.
-[Issue #14](https://github.com/MinecraftProt/Stackframe/issues/14) will define
-its exact format, path, defaults, validation, and migrations. Until then, do
-not invent a `stackframe.properties` file or assume a pasted setting is active.
-
-When validated configuration is available, a rejected value should identify
-the key, location, and expected form while retaining the previous valid
-settings. Read the rejection before restarting. Compare against the
-documentation for the installed artifact version, preserve a copy of the prior
-file, and correct only the identified value. Do not delete unrelated server
-configuration or include credentials when requesting help. Report silent
-acceptance of an invalid value as a Stackframe bug.
+The development Fabric adapter reads `config/stackframe.properties` at startup.
+See [Fabric configuration](CONFIGURATION.md) for the exact schema and defaults.
+A rejected file reports its source line, key, and expected form on stderr and
+disables supplemental capture until the file is corrected and the server
+restarted. Original server logging continues. Preserve a copy of the prior
+file and correct only the reported setting; do not delete unrelated server
+configuration or include credentials when requesting help.
 
 ## Color and plain output
 
@@ -107,17 +103,16 @@ The renderer library supports `PLAIN` and `ANSI`, and its capability selector
 supports `AUTO`. In `AUTO`, redirected output, CI, `TERM=dumb`, unknown
 terminals, nonempty `NO_COLOR`, or `CLICOLOR=0` select plain text. Explicit
 `ANSI` is an intentional override, including over `NO_COLOR`. Explicit
-`PLAIN` disables styling. The development Fabric adapter currently emits its
-generic diagnostic in plain mode. Operator configuration and automatic mode
-selection are not wired into a released output path yet.
+`PLAIN` disables styling. The development Fabric adapter defaults to plain
+output. Its `output=ansi` setting explicitly selects ANSI. `output=auto`
+remains plain because the adapter cannot prove that every Log4j appender
+targets a compatible terminal.
 
-If ANSI escape codes appear as characters in a future hosting panel or saved
-log, first use that panel's raw log download or plain-text view. For automatic
-mode, set `NO_COLOR=1` in the server process environment and restart the
-process so the adapter can see it. If an explicit ANSI setting is active,
-choose the plain output setting once [configuration](#configuration-errors)
-ships; `NO_COLOR` will not override explicit ANSI. If plain output still
-contains escapes, report the exact destination and setting. Do not strip
+If ANSI escape codes appear as characters in a hosting panel or saved
+log, first use that panel's raw log download or plain-text view. The Fabric
+`output=auto` mode already emits plain. If an explicit ANSI setting is active,
+choose `output=plain`; `NO_COLOR` will not override explicit ANSI. If plain
+output still contains escapes, report the exact destination and setting. Do not strip
 escapes by deleting diagnostic lines, because that loses evidence.
 
 Color never carries unique meaning. The first line still contains the severity
@@ -135,8 +130,7 @@ original error vanished. Use the exact panel name/version, whether stdout is
 redirected, and the output mode when reporting a formatting problem.
 
 Automatic capability detection is conservative: an unknown or redirected
-destination should receive plain output once the Fabric adapter uses the
-renderer selector. Stackframe must leave other intended appenders and vanilla
+destination receives plain output. Stackframe must leave other intended appenders and vanilla
 crash reports working. Panel compatibility must be demonstrated in the
 [compatibility policy](COMPATIBILITY.md), not assumed from a plain screenshot.
 

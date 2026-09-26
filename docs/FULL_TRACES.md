@@ -9,7 +9,8 @@ appenders active. A record failure must leave the original event on that path.
 
 The default directory is `logs/stackframe-traces` relative to the server working
 directory. Each successful write publishes one `<correlation-id>.trace` UTF-8
-file. The diagnostic's `CorrelationId` and trace `recordId` use that same short,
+file with a `Stackframe trace v1` ownership header followed by the complete JDK
+stack trace. The diagnostic's `CorrelationId` and trace `recordId` use that same short,
 opaque token; its separate root `DiagnosticId` identifies the diagnostic
 occurrence. Search for the correlation token in the diagnostic, then
 open its matching file to see the complete JDK stack trace, including causes,
@@ -25,7 +26,8 @@ Concurrent events receive independent files and IDs, so no two traces interleave
 
 ## Privacy and retention
 
-These are **raw local debug records**, with no redaction mode implemented yet.
+These are **raw local debug records**, with no configurable redaction mode for
+trace files.
 Throwable messages and frames may contain
 tokens, player information, addresses, paths, and other private data. The
 recorder does not send them to the console, structured output, a support bundle,
@@ -40,12 +42,16 @@ Operators should keep the directory on a private filesystem and limit access to
 server administrators. If the filesystem cannot provide private access, the
 deployment must supply that protection or disable raw trace use before release.
 
-Records do not follow `latest.log` rotation and are **not automatically deleted**
-in this pre-alpha implementation. Administrators delete old `.trace` files under
-the dedicated directory according to their local retention policy. Incomplete
-`.partial` files, if cleanup was interrupted, are sensitive and may be deleted
-after the server is stopped. Backpressure and automated retention belong to the
-production-hardening work; until then, monitor available disk space.
+Records do not follow `latest.log` rotation. The Fabric configuration defaults
+to **manual** retention: nothing is automatically deleted. An operator may
+explicitly select bounded retention with both an age and file-count limit;
+see [Fabric configuration](CONFIGURATION.md) for the exact settings and failure
+behavior. Bounded cleanup only considers Stackframe-named regular `.trace`
+files carrying the ownership header, and it leaves older unmarked records and
+`.partial` files alone. If cleanup was interrupted, partial files are sensitive
+and may be deleted manually after the server is stopped. Monitor available
+disk space even with bounded retention; a warning means cleanup did not
+complete.
 
 ## Producer contract
 

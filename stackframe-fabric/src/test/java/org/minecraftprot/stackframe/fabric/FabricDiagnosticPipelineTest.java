@@ -10,6 +10,9 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,7 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.minecraftprot.stackframe.correlation.DiagnosticCorrelator.Config;
 import org.minecraftprot.stackframe.correlation.DiagnosticCorrelator.Importance;
+import org.minecraftprot.stackframe.fabric.config.ConfigurationFile;
+import org.minecraftprot.stackframe.fabric.config.StackframeConfiguration;
 import org.minecraftprot.stackframe.trace.TraceRecorder;
+import org.minecraftprot.stackframe.trace.TraceRetention;
 
 class FabricDiagnosticPipelineTest {
     @TempDir Path temp;
@@ -211,6 +217,98 @@ class FabricDiagnosticPipelineTest {
         try (var files = Files.list(traces)) {
             assertEquals(2, files.filter(path -> path.toString().endsWith(".trace")).count());
         }
+    }
+
+    @Test
+    void loadedSettingsControlOutputTraceDirectoryAndDeduplication() throws Exception {
+        var configDirectory = Files.createDirectory(temp.resolve("config"));
+        Files.writeString(configDirectory.resolve("stackframe.properties"), """
+                schema_version=1
+                output=ansi
+                trace_directory=logs/configured-traces
+                dedup_window_ms=0
+                """);
+        var configuration = ConfigurationFile.load(temp);
+        var output = new ByteArrayOutputStream();
+        var pipeline = new FabricDiagnosticPipeline(
+                configuration, temp, rendered -> write(output, rendered));
+        var failure = new IllegalStateException("private text");
+        pipeline.accept(failure);
+        pipeline.accept(failure);
+        pipeline.close();
+
+        var rendered = output.toString(StandardCharsets.UTF_8);
+        assertEquals(2, occurrences(rendered, "SF0001"));
+        assertTrue(rendered.contains("\u001b["), "explicit ANSI should reach the renderer");
+        assertFalse(rendered.contains("private text"));
+        assertEquals(0, pipeline.stats().suppressed());
+        try (var files = Files.list(temp.resolve("logs/configured-traces"))) {
+            assertEquals(2, files.filter(path -> path.toString().endsWith(".trace")).count());
+        }
+    }
+
+    @Test
+    void codeFilterDisablesSupplementalDiagnosticsAndTraceWrites() {
+        var config = new StackframeConfiguration(
+                StackframeConfiguration.Output.PLAIN, Path.of("filtered-traces"),
+                TraceRetention.Policy.manual(), Config.disabled(), false, false);
+        var output = new ByteArrayOutputStream();
+        var pipeline = new FabricDiagnosticPipeline(
+                config, temp, rendered -> write(output, rendered));
+        pipeline.accept(new IllegalStateException("source event"));
+        pipeline.close();
+
+        assertEquals(1, pipeline.stats().filtered());
+        assertEquals(0, pipeline.stats().accepted());
+        assertEquals("", output.toString(StandardCharsets.UTF_8));
+        assertFalse(Files.exists(temp.resolve("filtered-traces")));
+    }
+
+    @Test
+    void boundedRetentionCleansOwnedFilesAtStartupAndAfterWrites() throws Exception {
+        var traces = Files.createDirectory(temp.resolve("retained-traces"));
+        var old = Files.writeString(traces.resolve("ABCDEFGHJKMNPQRS.trace"),
+                TraceRecorder.FILE_HEADER + "old trace");
+        Files.setLastModifiedTime(old, FileTime.from(Instant.now().minus(Duration.ofDays(10))));
+        var unrelated = Files.writeString(traces.resolve("notes.trace"), "leave alone");
+        var partial = Files.writeString(traces.resolve("ABCDEFGHJKMNPQRS.partial"), "leave alone");
+        var config = new StackframeConfiguration(
+                StackframeConfiguration.Output.PLAIN, Path.of("retained-traces"),
+                TraceRetention.Policy.bounded(Duration.ofDays(7), 1),
+                Config.disabled(), true, false);
+        var output = new ByteArrayOutputStream();
+        var pipeline = new FabricDiagnosticPipeline(
+                config, temp, rendered -> write(output, rendered));
+        assertFalse(Files.exists(old), "startup cleanup should remove expired owned traces");
+        pipeline.accept(new IllegalStateException("first"));
+        pipeline.accept(new IllegalStateException("second"));
+        pipeline.close();
+
+        try (var files = Files.list(traces)) {
+            assertEquals(1, files.filter(path -> path.toString().endsWith(".trace")
+                    && !path.equals(unrelated)).count());
+        }
+        assertTrue(Files.exists(unrelated));
+        assertTrue(Files.exists(partial));
+        assertFalse(output.toString(StandardCharsets.UTF_8).contains("retention could not complete"));
+    }
+
+    @Test
+    void unsafeRetentionDirectorySurfacesAnOperatorWarning() throws Exception {
+        Files.writeString(temp.resolve("not-a-directory"), "blocked");
+        var config = new StackframeConfiguration(
+                StackframeConfiguration.Output.PLAIN, Path.of("not-a-directory"),
+                TraceRetention.Policy.bounded(Duration.ofDays(7), 10),
+                Config.disabled(), true, false);
+        var output = new ByteArrayOutputStream();
+        var pipeline = new FabricDiagnosticPipeline(
+                config, temp, rendered -> write(output, rendered));
+        pipeline.close();
+
+        var rendered = output.toString(StandardCharsets.UTF_8);
+        assertTrue(rendered.contains("trace retention could not complete"));
+        assertTrue(rendered.contains("UNSAFE_DIRECTORY"));
+        assertFalse(rendered.contains("not-a-directory"));
     }
 
     private static int occurrences(String text, String fragment) {
